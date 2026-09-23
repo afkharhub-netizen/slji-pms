@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SLJI Performance Monitoring System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --navy:#0F2F5E; --navy-2:#14407F; --blue:#1D4E9A; --blue-2:#2F66B8;
+  --sky:#E6EEF9; --mist:#F3F6FB; --line:#D3DCEA; --line-2:#9FB0CB;
+  --ink:#14213A; --ink-2:#4A5A78; --white:#FFFFFF;
+  --orange:#D9651B; --orange-d:#B9500F; --orange-bg:#FCEBDD;
+  --green:#1B7A4B; --green-bg:#DFF2E7; --amber:#8A5F00; --amber-bg:#FBEFCF; --red:#B3261E; --red-bg:#F9E0DE;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{background:var(--navy);scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font-family:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.5;min-height:100vh}
+body.noscroll{overflow:hidden}
+h1,h2,h3,h4{margin:0;line-height:1.25;color:var(--navy)}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue-2);outline-offset:2px}
+.muted{color:var(--ink-2)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{flex:none;display:block}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:#fff}
+.login-hero{background:var(--navy);color:#fff;padding:56px 56px 48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.login-hero h1{color:#fff;font-size:36px;max-width:16ch}
+.login-hero p{color:#C9D6EC;max-width:38ch;margin-top:14px;font-size:18px}
+.login-facts{display:grid;gap:12px;color:#C9D6EC;font-size:15px}
+.login-facts div{display:flex;gap:10px;align-items:center}
+.login-panel{display:grid;place-items:center;padding:32px 20px;background:#fff}
+.login-card{width:100%;max-width:400px;animation:rise .35s ease-out}
+.login-card h2{font-size:26px;margin-bottom:6px}
+.login-card .field{margin-top:16px}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:64px}
+.pw-toggle{position:absolute;right:4px;top:4px;height:36px;padding:0 12px;background:#fff;border:0;color:var(--blue);font-weight:700;border-radius:6px}
+.err{color:var(--red);font-weight:700;min-height:24px;margin-top:12px}
+.demo{margin-top:28px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--mist)}
+.demo h3{font-size:15px;margin-bottom:4px}
+.demo p{font-size:14px;color:var(--ink-2)}
+.demo .chips{margin-top:10px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:44px;height:44px;border-radius:10px}
+.brand b{display:block;font-size:22px;letter-spacing:.5px;line-height:1.1}
+.brand span{display:block;font-size:13px;color:#C9D6EC}
+@media(max-width:860px){
+  .login{grid-template-columns:1fr}
+  .login-hero{padding:28px 22px 56px;gap:18px;clip-path:polygon(0 0,100% 0,100% 88%,0 100%)}
+  .login-hero h1{font-size:26px}
+  .login-hero p{font-size:16px;margin-top:8px}
+  .login-facts{display:none}
+  .login-panel{padding:8px 20px 40px;align-items:start}
+}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:256px 1fr;min-height:100vh}
+.side{background:var(--navy);color:#fff;position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;padding:22px 14px 16px}
+.side .brand{padding:0 8px 22px;border-bottom:1px solid var(--navy-2)}
+.nav{display:grid;gap:4px;margin-top:18px}
+.nav-item{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#C9D6EC;text-align:left;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--navy-2);color:#fff}
+.nav-item.on{background:#fff;color:var(--navy);font-weight:700}
+.side-foot{margin-top:auto}
+.syncind{display:flex;align-items:center;gap:8px;font-size:12px;color:#C9D6EC;padding:6px 10px;margin-bottom:10px;border-radius:8px;background:var(--navy-2)}
+.syncind .dot{width:8px;height:8px;border-radius:50%;background:#9FB0CB;flex:none}
+.syncind.ok .dot{background:#3DDC84}
+.syncind.err .dot{background:#FF6B5E}
+.syncind.wait .dot{background:#F5C33B;animation:pulse 1.2s ease-in-out infinite}
+.syncind.off .dot{background:#9FB0CB}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.col{min-width:0}
+.main{padding:30px 38px 56px;max-width:1260px}
+.top{display:none}
+.tabbar{display:none}
+.menu-wrap{position:relative}
+.userbtn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:8px;background:var(--navy-2);color:#fff;text-align:left}
+.userbtn:hover{background:#1A4C93}
+.userbtn small{display:block;color:#C9D6EC;font-size:13px;line-height:1.2}
+.userbtn b{display:block;line-height:1.2;font-size:15px}
+.avatar{width:36px;height:36px;border-radius:50%;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.menu{position:absolute;z-index:40;min-width:220px;background:#fff;color:var(--ink);border:1px solid var(--line-2);border-radius:10px;padding:6px;clip-path:inset(0 0 100% 0);visibility:hidden;transition:clip-path .17s ease,visibility 0s .17s}
+.menu.up{bottom:calc(100% + 8px);left:0;right:0;clip-path:inset(100% 0 0 0)}
+.menu.down{top:calc(100% + 8px);right:0}
+.menu-wrap.open .menu{clip-path:inset(0);visibility:visible;transition:clip-path .17s ease}
+.menu-item{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:6px;background:#fff;text-align:left}
+.menu-item:hover{background:var(--sky)}
+.menu-meta{padding:8px 12px 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.menu-meta b{display:block}
+.menu-meta small{color:var(--ink-2)}
+
+.page{animation:none}
+.enter{animation:enter .24s ease-out}
+.page-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.page-head h1{font-size:30px}
+.page-head p{color:var(--ink-2);margin-top:4px}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap}
+.lock-note{display:flex;gap:8px;align-items:center;color:var(--ink-2);font-size:14px;margin-top:6px}
+
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  .top{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:30;height:58px;align-items:center;justify-content:space-between;padding:0 14px;background:var(--navy);color:#fff}
+  .top .brand svg{width:34px;height:34px}
+  .top .brand b{font-size:18px}
+  .top .brand span{display:none}
+  .top .avatar{width:38px;height:38px;border:0}
+  .main{padding:20px 16px 108px}
+  .page-head h1{font-size:25px}
+  .tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line-2);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:62px;padding:6px 2px;border:0;border-top:4px solid #fff;background:#fff;color:var(--ink-2);font-size:12px}
+  .tab.on{color:var(--blue);border-top-color:var(--blue);font-weight:700}
+}
+
+/* ---------- components ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px}
+.card + .card{margin-top:0}
+.card-h{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-h h2{font-size:19px}
+.card-h p{font-size:14px;color:var(--ink-2);flex-basis:100%}
+.stack{display:grid;gap:18px}
+.g2,.g3,.g4,.g5{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1100px){.g5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.g5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.g4,.g5{grid-template-columns:1fr 1fr;gap:10px}}
+
+.kpi{padding:16px}
+.kpi-l{font-size:14px;color:var(--ink-2)}
+.kpi-v{font-size:32px;font-weight:700;color:var(--navy);line-height:1.15;margin-top:4px}
+.kpi-s{font-size:13px;color:var(--ink-2);margin-top:4px}
+.kpi-b{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px}
+.kpi.orange{border-color:var(--orange);background:var(--orange-bg)}
+.kpi.orange .kpi-v{color:var(--orange-d)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:700;line-height:1.5;white-space:nowrap}
+.p-ok{background:var(--green-bg);color:var(--green)}
+.p-blue{background:var(--sky);color:var(--blue)}
+.p-warn{background:var(--amber-bg);color:var(--amber)}
+.p-bad{background:var(--red-bg);color:var(--red)}
+.p-mute{background:#E9EDF4;color:var(--ink-2)}
+.p-orange{background:var(--orange-bg);color:var(--orange-d)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;font-weight:700;transition:background .15s,transform .1s,border-color .15s}
+.btn:hover{background:var(--navy-2);border-color:var(--navy-2)}
+.btn:active{transform:translateY(1px)}
+.btn.sec{background:#fff;color:var(--navy)}
+.btn.sec:hover{background:var(--sky)}
+.btn.danger{background:#fff;color:var(--red);border-color:#DDA8A4}
+.btn.danger:hover{background:var(--red-bg)}
+.btn.accent{background:var(--orange);border-color:var(--orange)}
+.btn.accent:hover{background:var(--orange-d);border-color:var(--orange-d)}
+.btn.sm{min-height:38px;padding:0 13px;font-size:15px}
+.btn.block{width:100%}
+.btn[disabled]{background:#C9D3E3;border-color:#C9D3E3;color:#5D6B85;cursor:not-allowed}
+.icon-btn{display:grid;place-items:center;width:44px;height:44px;border:1.5px solid var(--line-2);background:#fff;border-radius:8px;color:var(--navy)}
+.icon-btn:hover{background:var(--sky)}
+
+.field{display:grid;gap:6px;align-content:start}
+.field label,.field .lbl{font-weight:700;font-size:15px}
+.opt{font-weight:400;color:var(--ink-2);font-size:13px}
+.field small{color:var(--ink-2);font-size:13px}
+input,select,textarea{width:100%;min-height:46px;padding:9px 12px;border:1.5px solid var(--line-2);border-radius:8px;background:#fff}
+textarea{resize:vertical;min-height:84px;line-height:1.45}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px solid #B9CFEF;outline-offset:0}
+::placeholder{color:#6B7A96}
+.form{display:grid;gap:16px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.form-err{color:var(--red);font-weight:700;min-height:0}
+.form-err:empty{display:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;width:1px;height:1px;clip:rect(0 0 0 0);min-height:0;padding:0;border:0}
+.chip span,.chip button{display:inline-flex;align-items:center;min-height:42px;padding:0 14px;border:1.5px solid var(--line-2);border-radius:8px;background:#fff;font-weight:700;color:var(--navy);cursor:pointer;transition:background .12s,border-color .12s}
+.chip span:hover,.chip button:hover{background:var(--sky)}
+.chip input:checked + span{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip input:focus-visible + span{outline:3px solid var(--blue-2);outline-offset:2px}
+.rate{display:flex;gap:8px}
+.rate .chip span{width:46px;justify-content:center;padding:0}
+.seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--navy);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{min-height:40px;padding:0 14px;border:0;background:#fff;color:var(--navy);font-weight:700}
+.seg button + button{border-left:1.5px solid var(--navy)}
+.seg button.on{background:var(--navy);color:#fff}
+.seg button:not(.on):hover{background:var(--sky)}
+
+.weekbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.weekbar .wk{min-width:180px;padding:4px 14px;border:1.5px solid var(--line-2);border-radius:8px;background:#fff;text-align:center;line-height:1.25}
+.weekbar .wk b{display:block;color:var(--navy)}
+.weekbar .wk span{font-size:13px;color:var(--ink-2)}
+
+.bar{height:12px;border-radius:99px;background:#E1E8F3;overflow:hidden}
+.bar span{display:block;height:100%;width:0;border-radius:99px;transition:width .7s cubic-bezier(.2,.7,.2,1)}
+.bar.thin{height:7px;margin-top:5px}
+
+.list{display:grid}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.row:last-child{padding-bottom:0}
+.row .who b{display:block}
+.row .who small{color:var(--ink-2)}
+.row .meter{min-width:150px}
+.row .meter .num{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
+@media(max-width:640px){.row{grid-template-columns:auto 1fr}.row .meter,.row .end{grid-column:1/-1}}
+.empty{padding:26px 16px;text-align:center;color:var(--ink-2);border:1.5px dashed var(--line-2);border-radius:10px;background:#fff}
+.empty b{display:block;color:var(--navy);margin-bottom:4px;font-size:17px}
+.empty .btn{margin-top:14px}
+
+.plan h3{font-size:18px;margin:8px 0 2px}
+.plan-top{display:flex;gap:8px;flex-wrap:wrap}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:14px 0 0}
+.facts dt{font-size:13px;color:var(--ink-2)}
+.facts dd{margin:0;font-weight:700}
+@media(max-width:560px){.facts{grid-template-columns:1fr}}
+.card-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.plans{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:900px){.plans{grid-template-columns:1fr}}
+.note{border-left:4px solid var(--blue);background:var(--sky);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:14px;font-size:15px}
+.note b{display:block;color:var(--navy);font-size:14px}
+.alert{border:1.5px solid var(--orange);background:var(--orange-bg);border-radius:10px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.tbl{width:100%;border-collapse:collapse;min-width:560px}
+.tbl th{background:var(--sky);color:var(--navy);text-align:left;font-size:14px;padding:10px 14px;white-space:nowrap}
+.tbl td{padding:12px 14px;border-top:1px solid var(--line);vertical-align:middle}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr.hl td{background:var(--mist)}
+
+.acc{border:1px solid var(--line);border-radius:10px;background:#fff}
+.acc + .acc{margin-top:10px}
+.acc-head{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:10px 16px;background:#fff;border:0;border-radius:10px;text-align:left}
+.acc-head:hover{background:var(--mist)}
+.acc-head .chev{transition:transform .22s}
+.acc.open .acc-head .chev{transform:rotate(180deg)}
+.collapse{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}
+.collapse > .in{overflow:hidden;min-height:0;visibility:hidden;transition:visibility 0s .25s}
+.open > .collapse > .in,.collapse.open > .in{visibility:visible;transition:visibility 0s}
+.open > .collapse,.collapse.open{grid-template-rows:1fr}
+.acc-body{padding:2px 16px 16px;border-top:1px solid var(--line);margin-top:0;padding-top:14px}
+.acc-body p + p{margin-top:8px}
+.acc-body b{color:var(--navy)}
+
+.filters .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding-top:16px}
+@media(max-width:900px){.filters .fgrid{grid-template-columns:1fr}}
+.fside{border:1.5px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px;align-content:start}
+.fside.a{border-color:var(--blue)}
+.fside.b{border-color:var(--orange)}
+.fside h3{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
+.fsum{font-size:14px;color:var(--ink-2);background:var(--mist);border-radius:8px;padding:8px 12px}
+.fadd{display:grid;place-items:center;border:1.5px dashed var(--line-2);border-radius:10px;padding:20px;text-align:center;gap:8px;color:var(--ink-2)}
+.filters-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:0;padding:0;text-align:left}
+.filters-toggle h2{font-size:19px}
+.filters-toggle .chev{transition:transform .22s}
+.filters.open .filters-toggle .chev{transform:rotate(180deg)}
+
+.chart-slot{width:100%;min-height:120px}
+.chart{display:block;max-width:100%}
+.chart .grow{transform-box:fill-box;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.7,.2,1)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--ink-2);margin-top:10px}
+.divrow{padding:12px 0;border-top:1px solid var(--line)}
+.divrow:first-child{border-top:0;padding-top:0}
+.divrow .top2{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.divrow .top2 span:last-child{font-variant-numeric:tabular-nums;text-align:right}
+.rank{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.rank:first-of-type{border-top:0}
+.rank .pos{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--sky);color:var(--navy);font-weight:700;font-size:14px}
+.rank.low .pos{background:var(--red-bg);color:var(--red)}
+.rank b{display:block}
+.rank small{color:var(--ink-2)}
+.rank .pct{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.issue{padding:12px 0;border-top:1px solid var(--line)}
+.issue:first-child{border-top:0;padding-top:0}
+.issue .l{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+.decision{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.decision:first-of-type{border-top:0;padding-top:0}
+.decision h3{font-size:17px}
+.decision .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;font-size:14px;color:var(--ink-2)}
+.inline-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+@media(max-width:560px){.inline-form{grid-template-columns:1fr}}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end}
+.tools .field{flex:1;min-width:150px}
+
+/* ---------- overlays ---------- */
+.modal{position:fixed;inset:0;z-index:100;background:#DCE5F2;display:grid;place-items:center;padding:20px;overflow-y:auto}
+.modal[hidden]{display:none}
+.dlg{width:100%;max-width:580px;background:#fff;border:1.5px solid var(--navy);border-radius:12px;animation:rise .22s ease-out;margin:auto}
+.dlg > header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:var(--navy);border-radius:10px 10px 0 0}
+.dlg > header h2{color:#fff;font-size:19px}
+.dlg > header .icon-btn{width:38px;height:38px;border-color:var(--navy-2);background:var(--navy-2);color:#fff}
+.dlg-b{padding:18px}
+.dlg-b > p{margin-bottom:14px}
+@media(max-width:560px){.modal{padding:0;place-items:stretch}.dlg{border-radius:0;border:0;min-height:100%;max-width:none}.dlg > header{border-radius:0}}
+#toasts{position:fixed;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:8px;z-index:200;pointer-events:none;padding:0 14px}
+.toast{background:var(--navy);color:#fff;font-weight:700;padding:12px 18px;border-radius:8px;border:1.5px solid #fff;animation:toastin .25s ease-out;max-width:520px}
+.toast.bad{background:var(--red);border-color:#fff}
+.toast.ok{background:var(--green)}
+@media(max-width:900px){#toasts{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.fatal{max-width:460px;margin:20vh auto;padding:24px;text-align:center;display:grid;gap:14px;justify-items:center}
+
+@keyframes enter{from{transform:translateY(12px)}to{transform:none}}
+@keyframes rise{from{transform:translateY(16px)}to{transform:none}}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes toastin{from{transform:translateY(18px)}to{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="modal" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<!-- Cloud sync (optional): fill in FIREBASE_CONFIG below with your own Firebase project's
+     web-app config to make data sync live across every device. See the setup guide that
+     came with this file. If FIREBASE_CONFIG is left blank the app runs exactly as before,
+     saving only to this browser (localStorage) on this one device. -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   SLJI Performance Monitoring System
+   Part 1: utilities, dates, seed data, metrics (no DOM access)
+   ===================================================================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let _n=0;
+const uid=p=>p+'_'+Date.now().toString(36)+(_n++).toString(36)+Math.floor(Math.random()*46656).toString(36);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const mean=a=>a.length?sum(a)/a.length:null;
+const fmtPct=v=>v==null?'–':Math.round(v)+'%';
+
+/* ----- dates (ISO weeks, Monday start) ----- */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseISO=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(d,n)=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x};
+function isoWeekOf(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y=t.getUTCFullYear();const w=Math.ceil(((t-Date.UTC(y,0,1))/864e5+1)/7);return{y,w}}
+const weekKeyOf=d=>{const {y,w}=isoWeekOf(d);return y+'-W'+pad(w)};
+function weekStart(key){const [y,w]=key.split('-W').map(Number);const jan4=new Date(Date.UTC(y,0,4));const day=jan4.getUTCDay()||7;const mon=new Date(jan4);mon.setUTCDate(jan4.getUTCDate()-day+1+(w-1)*7);return new Date(mon.getUTCFullYear(),mon.getUTCMonth(),mon.getUTCDate())}
+const weekEnd=k=>addDays(weekStart(k),6);
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD=d=>d.getDate()+' '+MON[d.getMonth()];
+const fmtDY=d=>fmtD(d)+' '+d.getFullYear();
+const wkNum=k=>Number(k.split('-W')[1]);
+const weekLabel=k=>'Week '+wkNum(k);
+const weekRange=k=>fmtD(weekStart(k))+' – '+fmtDY(weekEnd(k));
+const shiftWeek=(k,n)=>weekKeyOf(addDays(weekStart(k),7*n));
+const curWeek=()=>weekKeyOf(new Date());
+function weeksBetween(a,b){const out=[];let k=weekKeyOf(a);const last=weekKeyOf(b);let g=0;while(g++<520){out.push(k);if(k>=last)break;k=shiftWeek(k,1)}return out}
+function resolvePeriod(p){
+  let a=p.from,b=p.to;if(a>b){const t=a;a=b;b=t}
+  const start=p.mode==='week'?weekStart(a):parseISO(a);
+  const end=p.mode==='week'?weekEnd(b):parseISO(b);
+  return{start,end,weeks:weeksBetween(start,end)};
+}
+function periodLabel(p,per){
+  if(p.mode==='week'){const a=p.from<=p.to?p.from:p.to,b=p.from<=p.to?p.to:p.from;return (a===b?weekLabel(a):'Weeks '+wkNum(a)+' to '+wkNum(b))+' · '+fmtD(per.start)+' – '+fmtDY(per.end)}
+  return fmtD(per.start)+' – '+fmtDY(per.end)+' · '+per.weeks.length+' week'+(per.weeks.length===1?'':'s');
+}
+
+/* ----- constants ----- */
+const PRI={P1:'P1 · Critical',P2:'P2 · Important',P3:'P3 · Routine'};
+const PRI_W={P1:3,P2:2,P3:1};
+const priCls=p=>p==='P1'?'p-bad':p==='P2'?'p-warn':'p-blue';
+const CAUSES=['Management','Resource','Coordination','Employee','Planning','External','Beneficiary','Financial'];
+const BANDS=[
+  {key:'excellent',label:'Excellent',range:'90+',min:90,color:'#1B7A4B'},
+  {key:'good',label:'Good',range:'75–89',min:75,color:'#1D4E9A'},
+  {key:'fair',label:'Fair',range:'60–74',min:60,color:'#C98A12'},
+  {key:'low',label:'Low',range:'below 60',min:0,color:'#B3261E'}
+];
+const bandOf=v=>BANDS.find(b=>v>=b.min)||BANDS[3];
+const bandCls=v=>v==null?'p-mute':v>=90?'p-ok':v>=75?'p-blue':v>=60?'p-warn':'p-bad';
+const C={A:'#1D4E9A',B:'#D9651B'};
+
+/* ----- hashing (demo-grade; a real deployment hashes on the server) ----- */
+async function hashPw(pw,salt){
+  const str=salt+':'+pw;
+  try{
+    if(typeof crypto!=='undefined'&&crypto.subtle){
+      const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  let h1=0xdeadbeef,h2=0x41c6ce57;
+  for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+  h1=Math.imul(h1^h1>>>16,2246822507)^Math.imul(h2^h2>>>13,3266489909);
+  h2=Math.imul(h2^h2>>>16,2246822507)^Math.imul(h1^h1>>>13,3266489909);
+  return 'f'+(4294967296*(2097151&h2)+(h1>>>0)).toString(16);
+}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ----- demo seed data ----- */
+const TPL={
+ u_dawah:[
+  ["Weekly Qur'an study circle","Deepen the community's understanding of the Qur'an","3 sessions, 40 attendees each","Attendance and participant feedback","Hall booking, printed notes"],
+  ["Friday khutbah preparation","Give clear and timely guidance to congregations","4 khutbah outlines by Wednesday","Outlines reviewed on time","Reference library access"],
+  ["Home visits to new members","Improve member retention","8 visits completed","Visits completed vs planned","Transport allowance"],
+  ["Youth camp study material","Have the camp curriculum ready","1 complete module","Module approved by team head","Printing budget"]],
+ u_welfare:[
+  ["Food-pack distribution round","Support families in need this month","60 packs delivered","Households reached vs list","Vehicle, volunteers, packing supplies"],
+  ["Case assessment visits","Verify and prioritise new aid requests","10 cases assessed","Cases closed within 7 days","Field transport"],
+  ["Education support follow-up","Keep sponsored students in school","15 students contacted","Attendance confirmed","Phone credit"],
+  ["Volunteer coordination meeting","Align weekend volunteer teams","1 meeting, 20 volunteers","Volunteer turnout","Meeting room"]],
+ u_media:[
+  ["Weekly newsletter issue","Keep members informed","1 issue, 12 pages","Issue published on schedule","Design software, photos"],
+  ["Event coverage and photo report","Document community programmes","2 events covered","Report published within 48 hours","Camera kit"],
+  ["Social media content calendar","Maintain steady public engagement","10 posts scheduled","Posts published vs scheduled","Content drafts from units"],
+  ["Publication proofreading","Ensure accuracy of printed material","3 items proofed","Errors found after print","Reviewer time"]],
+ u_finance:[
+  ["Weekly payment vouchers","Pay suppliers and staff on time","All vouchers cleared by Thursday","Vouchers cleared on time","Approval sign-off"],
+  ["Monthly budget variance review","Spot overspending early","1 report to management","Report delivered on time","Unit expenditure data"],
+  ["Donation receipts and records","Keep donor records complete","All receipts issued within 2 days","Receipts issued on time","Accounting software"],
+  ["Asset register update","Track equipment and property","20 entries verified","Entries verified vs planned","Inventory sheets"]],
+ u_youth:[
+  ["Youth football and fitness evening","Build healthy community engagement","1 session, 30 youth","Attendance","Ground booking, equipment"],
+  ["Mentoring circle","Guide young members on studies and careers","2 sessions, 12 mentees","Mentee feedback score","Mentors, meeting room"],
+  ["Volunteer clean-up drive","Serve the neighbourhood","1 drive, 25 volunteers","Volunteers turned out","Bags, gloves, transport"],
+  ["Leadership workshop planning","Prepare next month's workshop","Programme and speakers confirmed","Plan approved on time","Venue, speaker invitations"]]
+};
+const CAUSE_NOTE={
+  Management:['Approval was delayed and priorities changed midweek.','A management decision arrived after the planned date.','The plan was changed at short notice.'],
+  Resource:['Materials arrived late.','Transport was not available when needed.','Budget was not released in time.'],
+  Coordination:['Waiting for another unit to confirm the schedule.','Volunteers were not confirmed in time.','Handover between teams was unclear.'],
+  Employee:['Staff availability was limited this week.','A skill or capacity gap slowed delivery.','Attendance affected the outcome.'],
+  Planning:['The original plan underestimated the work involved.','Timelines were unrealistic given the resources.','Sequencing of tasks needed rework.'],
+  External:['An outside factor beyond the unit\'s control caused the delay.','Weather or an external event disrupted the schedule.','A third party did not deliver as expected.'],
+  Beneficiary:['Beneficiaries or stakeholders were not available as expected.','Turnout was lower than planned.','Feedback from stakeholders changed the scope.'],
+  Financial:['Funding was not released in time.','A budget constraint limited what could be done.','An invoice or payment was delayed.'],
+  None:['Completed as planned.','Delivered on schedule.','Target met.']
+};
+/* Suggested reason categories, matching the SLJI Non-Achievement & Problem Analysis form: E-Employee, M-Management, R-Resource, C-Coordination, EX-External, P-Planning, B-Beneficiary/stakeholder, F-Financial/funding */
+const CAUSE_CODE={Management:'M',Resource:'R',Coordination:'C',Employee:'E',Planning:'P',External:'EX',Beneficiary:'B',Financial:'F',None:'–'};
+const REPORT_TXT={
+  Management:{gaps:'Approvals and shifting priorities slowed several items.',rec:'Agree a fixed approval turnaround with management.'},
+  Resource:{gaps:'Materials, transport or budget were not ready in time.',rec:'Release resources earlier in the week.'},
+  Coordination:{gaps:'Cross-unit scheduling delayed delivery.',rec:'Hold a short weekly coordination call between units.'},
+  Employee:{gaps:'Staff availability or capacity limited what could be delivered.',rec:'Review workload and support the affected staff member.'},
+  Planning:{gaps:'Plans underestimated the time or steps required.',rec:'Build more realistic timelines into next week\'s plan.'},
+  External:{gaps:'Factors outside the unit\'s control affected delivery.',rec:'Document the external risk and plan a contingency.'},
+  Beneficiary:{gaps:'Beneficiary or stakeholder availability affected turnout or scope.',rec:'Confirm beneficiary or stakeholder availability earlier next time.'},
+  Financial:{gaps:'Funding or budget release was delayed.',rec:'Raise the funding timeline with Finance & Administration.'},
+  None:{gaps:'No major gaps this week.',rec:'Keep the current pace.'}
+};
+function wavg(list){let s=0,w=0;list.forEach(a=>{const k=PRI_W[a.pri]||1;s+=a.ach*k;w+=k});return w?s/w:null}
+
+/* ----- Divisional Head assessment (Weekly_Plan_Divisional_Heads.docx) ----- */
+const HEAD_AREAS=[
+  ['strategic','Strategic Alignment',10],['planning','Planning',10],['target','Target Achievement',15],
+  ['team','Team Performance',15],['resource','Resource Management',10],['service','Service Quality',10],
+  ['coordination','Coordination',10],['problem','Problem Solving',10],['accountability','Accountability',5],
+  ['innovation','Innovation & Improvement',5]
+];
+const HEAD_REVIEW_Q=[
+  ['targets','Did the division achieve its major weekly targets?'],
+  ['priorities','Were priorities clearly communicated to staff?'],
+  ['assigned','Were staff properly assigned to tasks?'],
+  ['pending','Were pending matters followed up?'],
+  ['served','Were beneficiaries/stakeholders adequately served?'],
+  ['coordinated','Were inter-divisional matters coordinated?'],
+  ['resources','Were financial/resources properly utilized?'],
+  ['identified','Were problems identified early?'],
+  ['corrective','Were corrective actions taken?'],
+  ['reports','Were required reports submitted on time?'],
+  ['leadership','Did the Head demonstrate leadership and ownership?'],
+  ['opportunities','Were opportunities for improvement identified?']
+];
+
+async function buildSeed(){
+  const r=rng(20260920),salt='slji';
+  const pw=await hashPw('Slji@2026',salt);
+  const pick=a=>a[Math.floor(r()*a.length)];
+  const wpick=(items,ws)=>{let t=r()*sum(ws);for(let i=0;i<items.length;i++){t-=ws[i];if(t<=0)return items[i]}return items[items.length-1]};
+  const units=[
+    {id:'u_dawah',name:"Da'wah & Education",active:true},
+    {id:'u_welfare',name:'Social Welfare',active:true},
+    {id:'u_media',name:'Media & Publications',active:true},
+    {id:'u_finance',name:'Finance & Administration',active:true},
+    {id:'u_youth',name:'Youth & Community',active:true}];
+  const users=[];
+  const add=(id,name,username,role,unitId,title,extra)=>users.push(Object.assign({id,name,username,role,unitId,title,pw,salt,active:true},extra||{}));
+  add('a_ameer','Ameer','ameer','admin',null,'Ameer');
+  add('a_gs','General Secretary','gs','admin',null,'General Secretary');
+  [['u_dawah','Abdul Hakeem','head.dawah'],['u_welfare','Fathima Rifka','head.welfare'],['u_media','Shakir Ansar','head.media'],['u_finance','Zahran Ahmed','head.finance'],['u_youth','Rameeza Cassim','head.youth']]
+    .forEach(([u,n,un])=>add('h_'+u.slice(2),n,un,'head',u,'Team Head'));
+  const staff={
+    u_dawah:['Education Officer',[['Fazil Mohamed','fazil',89,.7],['Nazreen Ismail','nazreen',80,0],['Riyas Hameed','riyas',67,-.4]]],
+    u_welfare:['Welfare Officer',[['Shifana Ahamed','shifana',84,.2],['Imran Cader','imran',72,.5],['Zahira Latheef','zahira',61,-.6]]],
+    u_media:['Media Officer',[['Anas Marikar','anas',91,0],['Farhana Sheriff','farhana',77,.3],['Hisham Rauf','hisham',64,-.3]]],
+    u_finance:['Accounts Officer',[['Sumaiya Nizam','sumaiya',86,.1],['Ilham Jaufer','ilham',74,-.2],['Rushdi Salim','rushdi',58,.8]]],
+    u_youth:['Youth Coordinator',[['Mubarak Deen','mubarak',82,.4],['Nusrath Faleel','nusrath',76,.1],['Arshad Yoosuf','arshad',69,-.5]]]};
+  Object.keys(staff).forEach(u=>staff[u][1].forEach(s=>add('s_'+s[1],s[0],'staff.'+s[1],'staff',u,staff[u][0],{base:s[2],trend:s[3]})));
+  const cw=weekKeyOf(new Date());
+  const causeW={u_dawah:[1,2,4,1,1,1,1,1],u_welfare:[1,5,2,1,1,1,2,1],u_media:[1,2,5,1,1,1,1,1],u_finance:[5,2,1,1,1,1,1,3],u_youth:[3,1,3,2,1,1,2,1]};
+  const plans=[],asses=[];
+  users.filter(u=>u.role==='staff').forEach(u=>{
+    const tp=TPL[u.unitId];
+    for(let i=10;i>=0;i--){
+      const wk=shiftWeek(cw,-i);
+      if(i===0&&r()<0.22)continue;
+      const n=2+Math.floor(r()*3);
+      const chosen=tp.map((t,j)=>[r(),j]).sort((a,b)=>a[0]-b[0]).slice(0,n).map(x=>tp[x[1]]);
+      chosen.forEach((t,j)=>{
+        const pri=j===0?'P1':(j===1?'P2':pick(['P2','P3','P3']));
+        const ws=weekStart(wk);
+        const p={id:uid('p'),userId:u.id,unitId:u.unitId,weekKey:wk,activity:t[0],objective:t[1],priority:pri,target:t[2],deadline:iso(addDays(ws,2+Math.floor(r()*5))),kpi:t[3],resources:t[4],createdAt:iso(addDays(ws,-2))};
+        plans.push(p);
+        if(i>=1&&r()<0.94){
+          let ach=u.base+u.trend*(10-i)-3+(r()-.5)*36;
+          ach=clamp(Math.round(ach/5)*5,25,100);
+          const cause=(ach>=80&&r()>.15)?'None':wpick(CAUSES,causeW[u.unitId]);
+          const a={id:uid('a'),planId:p.id,userId:u.id,unitId:u.unitId,weekKey:wk,pri,ach,rating:clamp(Math.round(ach/20+(r()-.5)*.8),1,5),cause,note:pick(CAUSE_NOTE[cause]),headNote:'',at:iso(addDays(ws,6))};
+          if(ach<70&&r()<.3)a.headNote='Please raise blockers earlier in the week so we can help.';
+          asses.push(a);
+        }
+      });
+    }
+  });
+  const reports=[];
+  units.forEach(un=>{
+    const head=users.find(x=>x.role==='head'&&x.unitId===un.id);
+    for(let i=8;i>=1;i--){
+      if(r()<.15)continue;
+      const wk=shiftWeek(cw,-i);
+      const list=asses.filter(a=>a.unitId===un.id&&a.weekKey===wk);
+      if(!list.length)continue;
+      const cnt={None:0};CAUSES.forEach(c=>cnt[c]=0);
+      list.forEach(a=>cnt[a.cause]++);
+      const top=CAUSES.slice().sort((a,b)=>cnt[b]-cnt[a])[0];
+      const key=cnt[top]?top:'None';
+      const avg=wavg(list);
+      reports.push({id:uid('r'),unitId:un.id,weekKey:wk,headId:head.id,avg,rating:clamp(Math.round(avg/20),1,5),
+        summary:'The unit averaged '+Math.round(avg)+'% this week across '+list.length+' assessed items.',
+        gaps:REPORT_TXT[key].gaps,recommend:REPORT_TXT[key].rec,at:iso(addDays(weekStart(wk),6))});
+    }
+  });
+  const req=(unitId,item,detail,status,weeksAgo,note)=>({id:uid('q'),unitId,requestedBy:'h_'+unitId.slice(2),weekKey:shiftWeek(cw,-weeksAgo),item,detail,status,decisionNote:note||'',at:iso(addDays(new Date(),-7*weeksAgo))});
+  const requests=[
+    req('u_welfare','Vehicle for field visits','Van needed two days a week for aid distribution','Pending',0),
+    req('u_media','Camera and lighting kit','Replace damaged equipment used for event coverage','Pending',1),
+    req('u_youth','Printing budget for camp workbook','Extra 40 copies of the workbook','Approved',2,'Approved within the monthly budget.'),
+    req('u_dawah','Larger venue for the monthly programme','Current hall is over capacity','Approved',3),
+    req('u_finance','Accounting software licence','Renewal due next month','Declined',3,'Use the existing licence until year end.')];
+  const dec=(daysAgo,title,detail,unitId,status)=>({id:uid('d'),date:iso(addDays(new Date(),-daysAgo)),title,detail,unitId:unitId||'',status,by:'a_ameer'});
+  const decisions=[
+    dec(3,'Hold a fortnightly coordination meeting between Media and Da\'wah','Cuts delays caused by unconfirmed schedules.','u_media','Open'),
+    dec(6,'Fill the vacant field coordinator post','Field visits are limited by staff capacity.','u_welfare','Open'),
+    dec(11,'Review the approval workflow for payments','Turnaround is the main source of management delays.','u_finance','Open'),
+    dec(18,'Move the weekly plan deadline to Sunday 6 pm','Gives team heads time to review before Monday.','','Done'),
+    dec(27,'Approve extra printing budget for the youth camp','Covers the workbook print run.','u_youth','Done')];
+  return{v:1,units,users,plans,assessments:asses,reports,requests,decisions};
+}
+
+/* ----- metrics ----- */
+const inSubject=(subj,r)=>subj.type==='org'||(subj.type==='unit'&&r.unitId===subj.id)||(subj.type==='user'&&r.userId===subj.id);
+function pool(db,subj,per){
+  const wk=new Set(per.weeks);
+  /* Removed (deactivated) staff keep their historical records for their own audit trail (subj.type==='user'),
+     but are excluded from org/unit aggregate performance so a removal doesn't leave stale numbers behind. */
+  const activeIds=new Set(db.users.filter(u=>u.active).map(u=>u.id));
+  const keep=r=>subj.type==='user'||activeIds.has(r.userId);
+  return{plans:db.plans.filter(p=>wk.has(p.weekKey)&&inSubject(subj,p)&&keep(p)),asses:db.assessments.filter(a=>wk.has(a.weekKey)&&inSubject(subj,a)&&keep(a))};
+}
+function computeMetrics(db,subj,per){
+  const {plans,asses}=pool(db,subj,per);
+  const causes={};CAUSES.forEach(c=>causes[c]=0);
+  asses.forEach(a=>{if(causes[a.cause]!==undefined)causes[a.cause]++});
+  const series=per.weeks.map(k=>{const l=asses.filter(a=>a.weekKey===k);return{key:k,val:wavg(l),n:l.length}});
+  const sw={};asses.forEach(a=>{(sw[a.userId+'|'+a.weekKey]=sw[a.userId+'|'+a.weekKey]||[]).push(a)});
+  const scores=Object.keys(sw).map(k=>wavg(sw[k]));
+  const dist=BANDS.map(b=>({key:b.key,label:b.label,range:b.range,color:b.color,n:0}));
+  scores.forEach(s=>{const b=bandOf(s);dist.find(x=>x.key===b.key).n++});
+  return{planned:plans.length,assessed:asses.length,rate:plans.length?Math.min(100,asses.length/plans.length*100):null,
+    perf:wavg(asses),rating:mean(asses.map(a=>a.rating)),p1:wavg(asses.filter(a=>a.pri==='P1')),
+    onTrack:asses.length?asses.filter(a=>a.ach>=75).length/asses.length*100:null,
+    issues:sum(CAUSES.map(c=>causes[c])),causes,series,dist,scored:scores.length,asses};
+}
+function rankStaff(db,unitId,per){
+  const wk=new Set(per.weeks);
+  return db.users.filter(u=>u.role==='staff'&&u.active&&(!unitId||u.unitId===unitId)).map(u=>{
+    const l=db.assessments.filter(a=>a.userId===u.id&&wk.has(a.weekKey));
+    return{user:u,perf:wavg(l),n:l.length};
+  }).filter(x=>x.perf!==null).sort((a,b)=>b.perf-a.perf);
+}
+/* ----- access control (viewer-scoped views of the data) ----- */
+function canViewUser(v,u){
+  if(!v||!u)return false;
+  if(v.role==='admin')return true;
+  if(v.role==='head')return u.id===v.id||(u.unitId===v.unitId&&u.role==='staff');
+  return u.id===v.id;
+}
+function scopedDB(db,v){
+  const admin=v.role==='admin',head=v.role==='head';
+  const rec=r=>admin||(head?r.unitId===v.unitId:r.userId===v.id);
+  return{
+    units:db.units.filter(u=>admin||u.id===v.unitId),
+    users:db.users.filter(u=>canViewUser(v,u)),
+    plans:db.plans.filter(rec),assessments:db.assessments.filter(rec),
+    reports:db.reports.filter(r=>admin||(head&&r.unitId===v.unitId)),
+    requests:db.requests.filter(r=>admin||(head&&r.unitId===v.unitId)),
+    decisions:admin?db.decisions:[]
+  };
+}
+/*==DOM==*/
+/* =====================================================================
+   Part 2: state, storage, auth
+   ===================================================================== */
+const KEY='slji_pms_v1',SKEY='slji_pms_session';
+const mem={};
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return mem[k]||null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){mem[k]=v}};
+const ssGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return mem['s'+k]||null}};
+const ssSet=(k,v)=>{try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){mem['s'+k]=v}};
+let DB=null,ME=null,CH={};
+const UI={route:'',week:null,reviewUser:null,cmd:null,tab:'units',q:'',roleF:'',unitF:''};
+
+/* =====================================================================
+   Cloud sync (Firebase Firestore) — makes every device share one live copy
+   of the data instead of each browser keeping its own local-only copy.
+   Fill in FIREBASE_CONFIG (see the setup guide) with your Firebase project's
+   web-app config. Leave apiKey blank to keep the previous local-only
+   behaviour (each browser only ever sees its own changes).
+   ===================================================================== */
+const firebaseConfig = {
+    apiKey: "AIzaSyBfmRJnKMrJi1wUOUrOSFm1ImsZIHYszW4",
+    authDomain: "slji-pms.firebaseapp.com",
+    projectId: "slji-pms",
+    storageBucket: "slji-pms.firebasestorage.app",
+    messagingSenderId: "418702913863",
+    appId: "1:418702913863:web:fb12c71ad9d2e4c0c99c62"
+  };
+const CLOUD_ON=!!(FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId);
+let cloudDoc=null,cloudReady=false,pushTimer=null;
+let SYNC={state:CLOUD_ON?'connecting':'local',label:CLOUD_ON?'Connecting to cloud…':'Local only on this device'};
+function syncBadge(){
+  const cls={local:'off',connecting:'wait',ok:'ok',err:'err'}[SYNC.state]||'';
+  return '<div class="syncind '+cls+'" id="syncind" title="'+esc(SYNC.label)+' — data now syncs through Firebase so every device sees the same records."><span class="dot"></span><span>'+esc(SYNC.label)+'</span></div>';
+}
+function setSync(state,label){SYNC={state,label};const el=$('#syncind');if(el)el.outerHTML=syncBadge()}
+async function initCloud(){
+  if(!CLOUD_ON)return false;
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    await firebase.auth().signInAnonymously();
+    cloudDoc=firebase.firestore().collection('slji_pms').doc('state');
+    cloudReady=true;
+    return true;
+  }catch(e){console.error('Firebase init failed',e);setSync('err','Cloud sync failed to start — check FIREBASE_CONFIG');return false}
+}
+/* Subscribes to the shared cloud document. onFirstData(remoteOrNull) fires once with
+   the first snapshot (used to bootstrap DB on load); every later snapshot from another
+   device updates DB in place and redraws. hasPendingWrites snapshots are our own writes
+   echoing back and are skipped, so this never fights with what the person just typed. */
+function watchCloud(onFirstData){
+  let first=true;
+  cloudDoc.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites){setSync('ok','Synced');return}
+    if(!snap.exists){if(first){first=false;onFirstData(null)}setSync('ok','Synced');return}
+    const remote=snap.data();
+    if(first){first=false;onFirstData(remote);setSync('ok','Synced');return}
+    if(JSON.stringify(remote)===JSON.stringify(DB)){setSync('ok','Synced');return}
+    DB=remote;lsSet(KEY,JSON.stringify(DB));
+    if(ME){const u=DB.users.find(x=>x.id===ME.id&&x.active);if(u)ME=u;else{ME=null;ssSet(SKEY,null);draw(true);return}}
+    draw(false);setSync('ok','Synced · updated just now');
+  },err=>{console.error('Cloud sync error',err);setSync('err','Cloud sync interrupted — check your connection')});
+}
+/* Writes the whole DB back to the cloud (debounced so a burst of local edits becomes
+   one write). Firestore then pushes it to every other open device via watchCloud above. */
+function pushCloud(){
+  if(!cloudReady||!cloudDoc)return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(()=>{
+    cloudDoc.set(DB).then(()=>setSync('ok','Synced')).catch(e=>{console.error('Cloud save failed',e);setSync('err','Saved on this device only — will retry when back online')});
+  },150);
+}
+const persist=()=>{lsSet(KEY,JSON.stringify(DB));pushCloud()};
+const scoped=()=>scopedDB(DB,ME);
+const userName=id=>(DB.users.find(u=>u.id===id)||{name:'Former staff'}).name;
+const unitName=id=>(DB.units.find(u=>u.id===id)||{name:'No unit'}).name;
+const activeUnits=()=>DB.units.filter(u=>u.active);
+const ini=n=>String(n).split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+let attempts=0,lockUntil=0;
+async function tryLogin(username,pw){
+  if(Date.now()<lockUntil)return{err:'Too many attempts. Wait '+Math.ceil((lockUntil-Date.now())/1000)+' seconds and try again.'};
+  const u=DB.users.find(x=>x.active&&x.username.toLowerCase()===String(username).trim().toLowerCase());
+  const h=u?await hashPw(pw,u.salt):'';
+  if(u&&h===u.pw){attempts=0;return{user:u}}
+  attempts++;
+  if(attempts>=5){lockUntil=Date.now()+30000;attempts=0}
+  return{err:'Username or password is not correct.'};
+}
+
+/* =====================================================================
+   Part 3: icons and small UI helpers
+   ===================================================================== */
+const IC={
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  plan:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M8.5 12h7M8.5 16h5"/>',
+  check:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>',
+  chart:'<path d="M4 20V4M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.4-3.3 2.7-5 5.5-5s5.1 1.7 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.5.1 4 1.5 4.4 4.3"/>',
+  box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
+  doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  building:'<path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-5h6v5M8 10h.01M12 10h.01M16 10h.01"/>',
+  cog:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+  logout:'<path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4M19 12H9"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  trash:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+  edit:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',
+  download:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+  left:'<path d="M15 5l-7 7 7 7"/>',right:'<path d="M9 5l7 7-7 7"/>',down:'<path d="M6 9l6 6 6-6"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  key:'<circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L19 4M16 7l3 3"/>',
+  user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-4 3.5-6 7-6s6.4 2 7 6"/>'
+};
+const icon=(n,s=20)=>'<svg class="ic" viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
+const LOGO='<svg viewBox="0 0 48 48" role="img" aria-label="SLJI"><rect width="48" height="48" fill="#fff"/><polygon points="5,24 18,11 31,24 18,37" fill="#2F66B8"/><polygon points="17,24 30,11 43,24 30,37" fill="#0F2F5E"/><polygon points="17,24 24,17 31,24 24,31" fill="#D9651B"/></svg>';
+const brand=()=>'<div class="brand">'+LOGO+'<div><b>SLJI</b><span>Performance Monitoring</span></div></div>';
+
+const NAV={
+  staff:[['home','My week','home'],['plan','Weekly plan','plan'],['assess','Assessment','check'],['history','My history','chart']],
+  head:[['unit','Unit overview','users'],['review','Staff review','check'],['resources','Resources','box'],['report','Divisional report','doc']],
+  admin:[['command','Command center','grid'],['divisions','Divisions','building'],['admin','Organisation','cog']]
+};
+const HOME={staff:'home',head:'unit',admin:'command'};
+const ROLE_LABEL={staff:'Staff',head:'Team Head',admin:'Executive'};
+
+function toast(msg,type){
+  const t=document.createElement('div');t.className='toast '+(type||'');t.textContent=msg;
+  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),3400);
+}
+function openModal(title,body){
+  const m=$('#modal');m.hidden=false;
+  m.innerHTML='<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><header><h2 id="dlg-t">'+esc(title)+'</h2><button class="icon-btn" data-act="close-modal" aria-label="Close">'+icon('x')+'</button></header><div class="dlg-b">'+body+'</div></div>';
+  document.body.classList.add('noscroll');
+  const f=m.querySelector('input:not([type=hidden]),select,textarea');if(f)setTimeout(()=>f.focus(),60);
+}
+function closeModal(){const m=$('#modal');m.hidden=true;m.innerHTML='';document.body.classList.remove('noscroll')}
+let confirmCb=null;
+function confirmBox(title,text,okLabel,cb,danger){
+  confirmCb=cb;
+  openModal(title,'<p>'+esc(text)+'</p><div class="actions"><button class="btn sec" data-act="close-modal">Cancel</button><button class="btn '+(danger===false?'':'danger')+'" data-act="confirm-yes">'+esc(okLabel)+'</button></div>');
+}
+const fld=(label,name,o)=>{o=o||{};return '<div class="field"><label for="f-'+name+'">'+label+(o.req===false?' <span class="opt">optional</span>':'')+'</label><input id="f-'+name+'" name="'+name+'" type="'+(o.type||'text')+'" value="'+esc(o.value)+'" '+(o.req===false?'':'required')+' '+(o.ph?'placeholder="'+esc(o.ph)+'"':'')+' '+(o.attrs||'')+'>'+(o.help?'<small>'+o.help+'</small>':'')+'</div>'};
+const area=(label,name,value,o)=>{o=o||{};const id='f-'+name+(o.sfx||'');return '<div class="field"><label for="'+id+'">'+label+(o.req===false?' <span class="opt">optional</span>':'')+'</label><textarea id="'+id+'" name="'+name+'" rows="'+(o.rows||3)+'" maxlength="'+(o.max||500)+'" '+(o.req===false?'':'required')+'>'+esc(value)+'</textarea></div>'};
+const selBox=(label,name,opts,value,o)=>{o=o||{};return '<div class="field"><label for="f-'+name+'">'+label+'</label><select id="f-'+name+'" name="'+name+'" '+(o.req===false?'':'required')+'>'+opts.map(x=>'<option value="'+esc(x[0])+'"'+(String(x[0])===String(value)?' selected':'')+'>'+esc(x[1])+'</option>').join('')+'</select></div>'};
+const formErr=(f,msg)=>{const e=f.querySelector('.form-err');if(e)e.textContent=msg;else toast(msg,'bad')};
+const emptyBox=(t,d,btn)=>'<div class="empty"><b>'+esc(t)+'</b>'+esc(d)+(btn||'')+'</div>';
+const pageHead=(t,sub,actions,extra)=>'<div class="page-head"><div><h1>'+esc(t)+'</h1>'+(sub?'<p>'+sub+'</p>':'')+(extra||'')+'</div>'+(actions?'<div class="head-actions">'+actions+'</div>':'')+'</div>';
+const privacyNote=t=>'<p class="lock-note">'+icon('lock',16)+esc(t)+'</p>';
+const weekbar=(min,max)=>{const wk=UI.week;return '<div class="weekbar"><button class="icon-btn" data-act="wk-prev" aria-label="Previous week">'+icon('left')+'</button><div class="wk"><b>'+weekLabel(wk)+(wk===curWeek()?' · this week':'')+'</b><span>'+weekRange(wk)+'</span></div><button class="icon-btn" data-act="wk-next" aria-label="Next week">'+icon('right')+'</button>'+(wk!==curWeek()?'<button class="btn sec sm" data-act="wk-now">Jump to this week</button>':'')+'</div>'};
+const bar=(v,color)=>'<div class="bar" role="img" aria-label="'+fmtPct(v)+'"><span data-w="'+(v==null?0:clamp(v,0,100))+'" style="background:'+(color||(v==null?'#9FB0CB':bandOf(v).color))+'"></span></div>';
+function kpi(label,value,sub,cls){return '<div class="card kpi '+(cls||'')+'"><div class="kpi-l">'+label+'</div><div class="kpi-v">'+value+'</div>'+(sub?'<div class="kpi-s">'+sub+'</div>':'')+'</div>'}
+function topCause(list){const c={};list.forEach(a=>{if(a.cause&&a.cause!=='None')c[a.cause]=(c[a.cause]||0)+1});const k=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return k||''}
+const planLabel=p=>esc(p.activity);
+
+/* ----- charts (SVG, solid fills only) ----- */
+function slot(id,fn){CH[id]=fn;return '<div class="chart-slot" data-cid="'+id+'"></div>'}
+function paintCharts(){$$('.chart-slot').forEach(s=>{const fn=CH[s.dataset.cid];if(fn)s.innerHTML=fn(Math.max(240,Math.floor(s.clientWidth||320)))})}
+function animateBars(){requestAnimationFrame(()=>requestAnimationFrame(()=>$$('.bar > span[data-w]').forEach(s=>{s.style.width=s.dataset.w+'%'})))}
+function lineChart(W,sets,labels,ariaLabel){
+  const H=230,m={l:36,r:12,t:12,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const n=Math.max(1,labels.length);
+  const x=i=>m.l+(n<=1?iw/2:i*iw/(n-1)),y=v=>m.t+ih-(v/100)*ih;
+  let g='';
+  [0,25,50,75,100].forEach(t=>{g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="#DDE5F1"/><text x="'+(m.l-8)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="12" fill="#4A5A78">'+t+'</text>'});
+  const step=Math.max(1,Math.ceil(n/Math.max(2,Math.floor(iw/46))));
+  labels.forEach((lb,i)=>{if(i%step===0||i===n-1)g+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="#4A5A78">'+esc(lb)+'</text>'});
+  sets.forEach(s=>{
+    let d='',pen=false;
+    s.vals.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ';pen=true});
+    g+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="7 5"':'')+'/>';
+    s.vals.forEach((v,i)=>{if(v!=null)g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="4" fill="#fff" stroke="'+s.color+'" stroke-width="2.2"><title>'+esc(s.name)+' · '+esc(labels[i])+': '+Math.round(v)+'%</title></circle>'});
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="'+esc(ariaLabel||'Performance trend')+'">'+g+'</svg>';
+}
+function distChart(W,sets){
+  const H=220,m={l:30,r:8,t:24,b:48},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const max=Math.max(1,...sets.flatMap(s=>s.dist.map(b=>b.n)));
+  const gw=iw/BANDS.length,k=sets.length,bw=Math.min(52,(gw-14)/k);
+  let g='';
+  const yy=v=>m.t+ih-(v/max)*ih;
+  g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+(m.t+ih)+'" y2="'+(m.t+ih)+'" stroke="#9FB0CB"/>';
+  g+='<text x="'+(m.l-8)+'" y="'+(m.t+ih+4)+'" text-anchor="end" font-size="12" fill="#4A5A78">0</text><text x="'+(m.l-8)+'" y="'+(m.t+4)+'" text-anchor="end" font-size="12" fill="#4A5A78">'+max+'</text>';
+  BANDS.forEach((b,bi)=>{
+    const cx=m.l+gw*bi+gw/2;
+    sets.forEach((s,si)=>{
+      const n=s.dist[bi].n,h=(n/max)*ih,x0=cx-(k*bw)/2+si*bw;
+      const fill=k>1?s.color:b.color;
+      g+='<rect class="grow" x="'+(x0+(k>1?2:0))+'" y="'+(m.t+ih-h)+'" width="'+(bw-(k>1?4:0))+'" height="'+Math.max(h,0)+'" fill="'+fill+'" rx="3"><title>'+esc(s.name)+' · '+b.label+': '+n+'</title></rect>';
+      g+='<text x="'+(x0+bw/2)+'" y="'+(m.t+ih-h-6)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#14213A">'+n+'</text>';
+    });
+    g+='<text x="'+cx+'" y="'+(H-24)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#14213A">'+b.label+'</text><text x="'+cx+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="#4A5A78">'+b.range+'</text>';
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Performance distribution">'+g+'</svg>';
+}
+
+/* =====================================================================
+   Part 4: views
+   ===================================================================== */
+const VIEWS={};
+const byPri=(a,b)=>a.priority.localeCompare(b.priority)||a.activity.localeCompare(b.activity);
+
+/* ----- login ----- */
+function loginView(){
+  return '<div class="login"><section class="login-hero">'+brand()+'<div><h1>Performance Monitoring System</h1><p>Weekly plans, honest assessments and clear decisions for Sri Lanka Jama\'athe Islami.</p></div><div class="login-facts"><div>'+icon('lock',18)+'Every person sees only their own records</div><div>'+icon('users',18)+'Team heads see their unit; executives see the whole organisation</div></div></section>'+
+  '<section class="login-panel"><form class="login-card" data-form="login" autocomplete="on"><h2>Sign in</h2><p class="muted">Use the username and password given by the office.</p>'+
+  '<div class="field"><label for="lg-u">Username</label><input id="lg-u" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>'+
+  '<div class="field"><label for="lg-p">Password</label><div class="pw-wrap"><input id="lg-p" name="password" type="password" autocomplete="current-password" required><button class="pw-toggle" type="button" data-act="pw-toggle">Show</button></div></div>'+
+  '<p class="err" id="lg-err" role="alert"></p><button class="btn accent block" type="submit">Sign in</button>'+
+  '<div class="demo"><h3>Demo accounts</h3><p>Sample data for evaluation. Choose a role, then sign in.</p><div class="chips" style="margin-top:10px"><span class="chip"><button type="button" data-act="demo" data-u="ameer">Executive</button></span><span class="chip"><button type="button" data-act="demo" data-u="head.dawah">Team head</button></span><span class="chip"><button type="button" data-act="demo" data-u="staff.fazil">Staff</button></span></div></div>'+
+  '</form></section></div>';
+}
+
+/* ----- shell ----- */
+function shell(){
+  const nav=NAV[ME.role];
+  const item=n=>'<button class="nav-item'+(UI.route===n[0]?' on':'')+'" data-act="go" data-r="'+n[0]+'"'+(UI.route===n[0]?' aria-current="page"':'')+'>'+icon(n[2])+'<span>'+n[1]+'</span></button>';
+  const tab=n=>'<button class="tab'+(UI.route===n[0]?' on':'')+'" data-act="go" data-r="'+n[0]+'"'+(UI.route===n[0]?' aria-current="page"':'')+'>'+icon(n[2],22)+'<span>'+(n[1].length>12?n[1].split(' ')[0]:n[1])+'</span></button>';
+  const meta='<div class="menu-meta"><b>'+esc(ME.name)+'</b><small>'+ROLE_LABEL[ME.role]+(ME.unitId?' · '+esc(unitName(ME.unitId)):'')+'</small></div>';
+  const menuItems='<button class="menu-item" data-act="account">'+icon('key',18)+'Account and password</button><button class="menu-item" data-act="logout">'+icon('logout',18)+'Sign out</button>';
+  return '<div class="shell"><aside class="side">'+brand()+'<nav class="nav" aria-label="Main">'+nav.map(item).join('')+'</nav>'+
+    '<div class="side-foot">'+syncBadge()+'<div class="menu-wrap"><div class="menu up">'+meta+menuItems+'</div><button class="userbtn" data-act="menu" aria-haspopup="true"><span class="avatar">'+esc(ini(ME.name))+'</span><span><b>'+esc(ME.name)+'</b><small>'+ROLE_LABEL[ME.role]+'</small></span></button></div></div></aside>'+
+    '<div class="col"><header class="top">'+brand()+'<div class="menu-wrap"><div class="menu down">'+meta+menuItems+'</div><button class="avatar" data-act="menu" aria-label="Account menu" aria-haspopup="true">'+esc(ini(ME.name))+'</button></div></header><main id="view" class="main"></main></div>'+
+    '<nav class="tabbar" aria-label="Main">'+nav.map(tab).join('')+'</nav></div>';
+}
+
+/* ================= STAFF ================= */
+VIEWS.home=()=>{
+  const V=scoped(),cw=curWeek(),first=ME.name.split(' ')[0];
+  const plans=V.plans.filter(p=>p.weekKey===cw),asses=V.assessments.filter(a=>a.weekKey===cw);
+  const lw=shiftWeek(cw,-1),lwPlans=V.plans.filter(p=>p.weekKey===lw),lwAss=V.assessments.filter(a=>a.weekKey===lw);
+  const last=wavg(lwAss);
+  const four=wavg(V.assessments.filter(a=>a.weekKey>=shiftWeek(cw,-4)&&a.weekKey<cw));
+  const weeks=Array.from({length:8},(_,i)=>shiftWeek(cw,i-8));
+  const vals=weeks.map(k=>wavg(V.assessments.filter(a=>a.weekKey===k)));
+  const upcoming=plans.slice().sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const missing=lwPlans.length-lwAss.length;
+  const alertBox=missing>0?'<div class="alert"><div><b>Last week is not finished.</b> '+missing+' of '+lwPlans.length+' items still need an assessment.</div><button class="btn accent sm" data-act="goweek" data-r="assess" data-w="'+lw+'">Finish assessment</button></div>':'';
+  return pageHead('Assalamu alaikum, '+first,weekLabel(cw)+' · '+weekRange(cw),'',privacyNote('Visible to you, your team head and the executive team.'))+
+  '<div class="stack">'+alertBox+
+  '<div class="g4">'+kpi('Plan items this week',plans.length,plans.length?'Submitted':'Not submitted yet',plans.length?'':'orange')+kpi('Assessed this week',asses.length+' of '+plans.length,'Recorded so far')+kpi('Last week',fmtPct(last),lwAss.length?lwAss.length+' items assessed':'No assessment')+kpi('4-week average',fmtPct(four),'Priority-weighted')+'</div>'+
+  '<div class="g2"><section class="card"><div class="card-h"><h2>This week</h2><div class="head-actions"><button class="btn sm" data-act="goweek" data-r="plan" data-w="'+cw+'">'+(plans.length?'View plan':'Add plan items')+'</button><button class="btn sec sm" data-act="goweek" data-r="assess" data-w="'+cw+'">Assessment</button></div></div>'+
+  (upcoming.length?'<div class="list">'+upcoming.map(p=>'<div class="row"><span class="pill '+priCls(p.priority)+'">'+p.priority+'</span><div class="who"><b>'+esc(p.activity)+'</b><small>Deadline '+fmtDY(parseISO(p.deadline))+'</small></div><span>'+(asses.find(a=>a.planId===p.id)?'<span class="pill p-ok">Assessed</span>':'')+'</span></div>').join('')+'</div>':emptyBox('No plan yet for '+weekLabel(cw),'Add your activities, targets and deadlines for the week.','<div><button class="btn" data-act="goweek" data-r="plan" data-w="'+cw+'">Add plan items</button></div>'))+'</section>'+
+  '<section class="card"><div class="card-h"><h2>Performance, last 8 weeks</h2></div>'+slot('home-trend',W=>lineChart(W,[{name:'You',color:C.A,vals}],weeks.map(k=>'W'+wkNum(k)),'Your performance over the last 8 weeks'))+'</section></div></div>';
+};
+
+const planCard=(p,a,editable)=>'<article class="card plan"><div class="plan-top"><span class="pill '+priCls(p.priority)+'">'+PRI[p.priority]+'</span>'+(a?'<span class="pill '+bandCls(a.ach)+'">'+a.ach+'% achieved</span>':'')+'</div><h3>'+esc(p.activity)+'</h3><p class="muted">'+esc(p.objective)+'</p>'+
+  '<dl class="facts"><div><dt>Target</dt><dd>'+esc(p.target)+'</dd></div><div><dt>Deadline</dt><dd>'+fmtDY(parseISO(p.deadline))+'</dd></div><div><dt>Resources</dt><dd>'+esc(p.resources||'None listed')+'</dd></div><div><dt>KPI</dt><dd>'+esc(p.kpi)+'</dd></div></dl>'+
+  (editable&&!a?'<div class="card-actions"><button class="btn sec sm" data-act="plan-edit" data-id="'+p.id+'">'+icon('edit',16)+'Edit</button><button class="btn danger sm" data-act="plan-del" data-id="'+p.id+'">'+icon('trash',16)+'Delete</button></div>':'')+'</article>';
+
+VIEWS.plan=()=>{
+  const V=scoped(),wk=UI.week,editable=wk>=curWeek();
+  const list=V.plans.filter(p=>p.weekKey===wk).sort(byPri);
+  const add=editable?'<button class="btn" data-act="plan-add">'+icon('plus',18)+'Add plan item</button>':'';
+  return pageHead('Weekly plan','Your activities, targets and deadlines for the week.',add,privacyNote('Visible to you, your team head and the executive team.'))+weekbar()+
+  (list.length?'<div class="plans">'+list.map(p=>planCard(p,V.assessments.find(a=>a.planId===p.id),editable)).join('')+'</div>':
+   emptyBox(editable?'No plan for '+weekLabel(wk)+' yet':'Nothing was planned for '+weekLabel(wk),editable?'Add your first item. Set a priority, a target and a deadline.':'Past weeks can no longer be planned.',editable?'<div><button class="btn" data-act="plan-add">Add plan item</button></div>':''))+
+  (editable&&list.length?'<p class="muted" style="margin-top:14px">Items that already have an assessment are locked.</p>':'');
+};
+function planForm(p){
+  const ws=weekStart(UI.week),dflt=p?p.deadline:iso(addDays(ws,4));
+  return '<form class="form" data-form="plan" data-id="'+(p?p.id:'')+'">'+
+  fld('Activity','activity',{value:p&&p.activity,attrs:'maxlength="140"'})+
+  area('Objective','objective',p&&p.objective,{rows:2,max:300})+
+  '<div class="row2">'+selBox('Priority','priority',[['P1',PRI.P1],['P2',PRI.P2],['P3',PRI.P3]],p?p.priority:'P2')+fld('Deadline','deadline',{type:'date',value:dflt,attrs:'min="'+iso(ws)+'"'})+'</div>'+
+  fld('Target','target',{value:p&&p.target,ph:'For example: 3 sessions, 40 attendees',attrs:'maxlength="140"'})+
+  fld('Resources needed','resources',{value:p&&p.resources,req:false,attrs:'maxlength="160"'})+
+  fld('KPI','kpi',{value:p&&p.kpi,ph:'How success will be measured',attrs:'maxlength="140"'})+
+  '<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save plan item</button></div></form>';
+}
+
+VIEWS.assess=()=>{
+  const V=scoped(),wk=UI.week,cw=curWeek();
+  const head=pageHead('Actual performance assessment','Record what was achieved against each plan item.','',privacyNote('Visible to you, your team head and the executive team.'))+weekbar();
+  if(wk>cw)return head+emptyBox('Assessment opens when the week starts','You can record results from '+fmtDY(weekStart(wk))+'.');
+  const list=V.plans.filter(p=>p.weekKey===wk).sort(byPri);
+  if(!list.length)return head+emptyBox('No plan items in '+weekLabel(wk),'Assessments are recorded against plan items. Add a plan first.','<div><button class="btn" data-act="goweek" data-r="plan" data-w="'+wk+'">Go to weekly plan</button></div>')+behaviorSection(V,wk);
+  const done=list.filter(p=>V.assessments.find(a=>a.planId===p.id)).length;
+  return head+'<p class="muted" style="margin:-4px 0 16px"><b>'+done+' of '+list.length+'</b> items assessed</p><div class="stack">'+list.map(p=>{
+    const a=V.assessments.find(x=>x.planId===p.id);
+    const ach=a?a.ach:'';
+    return '<form class="card form" data-form="assess" data-plan="'+p.id+'"><div class="plan-top"><span class="pill '+priCls(p.priority)+'">'+PRI[p.priority]+'</span>'+(a?'<span class="pill p-ok">Saved '+fmtD(parseISO(a.at))+'</span>':'<span class="pill p-warn">Not assessed</span>')+'</div>'+
+    '<div><h3 style="font-size:18px">'+esc(p.activity)+'</h3><p class="muted">Target: '+esc(p.target)+' · KPI: '+esc(p.kpi)+'</p></div>'+
+    '<div class="field"><span class="lbl">How much of the target was achieved?</span><div class="chips">'+[0,25,50,75,100].map(v=>'<span class="chip"><button type="button" data-act="set-ach" data-v="'+v+'">'+v+'%</button></span>').join('')+'</div><input name="ach" type="number" min="0" max="100" step="1" value="'+ach+'" placeholder="Or type a number from 0 to 100" required aria-label="Percent achieved"></div>'+
+    '<div class="row2">'+selBox('Timeliness','timeliness',[['OnTime','Completed on time'],['Delayed','Delayed']],a?a.timeliness:'OnTime')+selBox('Status','status',[['Completed','Completed'],['Partial','Partial'],['NotDone','Not done']],a?a.status:'Completed')+'</div>'+
+    '<div class="field"><span class="lbl">Quality of the result</span><div class="rate" role="radiogroup" aria-label="Quality rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="rating" value="'+n+'"'+(a&&a.rating===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div><small>1 is poor, 5 is excellent.</small></div>'+
+    '<div class="field"><span class="lbl">Main cause of any gap</span><div class="chips">'+['None'].concat(CAUSES).map(c=>'<label class="chip"><input type="radio" name="cause" value="'+c+'"'+((a?a.cause:'None')===c?' checked':'')+'><span>'+c+'</span></label>').join('')+'</div><small>Choose one when less than 80% was achieved (E-Employee, M-Management, R-Resource, C-Coordination, EX-External, P-Planning, B-Beneficiary, F-Financial).</small></div>'+
+    area('Notes / remarks','note',a&&a.note,{rows:2,req:false,max:300,sfx:p.id})+
+    '<div class="field"><span class="lbl">Non-achievement &amp; problem analysis <span class="opt">fill in if this item was not fully completed</span></span></div>'+
+    '<div class="row2">'+fld('Impact of the gap','impact',{value:a&&a.impact,req:false,attrs:'maxlength="160"',ph:'What effect did this have?'})+fld('Corrective action','corrective',{value:a&&a.corrective,req:false,attrs:'maxlength="160"',ph:'What will fix it'})+'</div>'+
+    '<div class="row2">'+fld('Corrective deadline','corrDeadline',{type:'date',value:a&&a.corrDeadline,req:false})+fld('Responsible person','responsible',{value:(a&&a.responsible)||ME.name,req:false,attrs:'maxlength="80"'})+'</div>'+
+    (a&&a.headNote?'<div class="note"><b>Feedback from your team head</b>'+esc(a.headNote)+'</div>':'')+
+    '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(a?'Update assessment':'Save assessment')+'</button></div></form>';
+  }).join('')+'</div>'+behaviorSection(V,wk);
+};
+/* ----- D. Employee Performance Assessment — Weekly Behavioural & Competency Assessment ----- */
+const BEHAVIOR_DIMS=[
+  ['attendance','Attendance & punctuality'],['commitment','Commitment to assigned work'],['quality','Quality of work'],
+  ['timely','Timely completion'],['accountability','Accountability & ownership'],['teamwork','Teamwork'],
+  ['communication','Communication'],['problem','Problem-solving ability'],['initiative','Initiative'],
+  ['adaptability','Adaptability'],['service','Service orientation'],['documentation','Documentation & reporting'],
+  ['ethics','Ethical conduct & integrity'],['learning','Learning & self-development'],['contribution','Contribution to organizational objectives']
+];
+function behaviorSection(V,wk){
+  const b=V.behaviors&&V.behaviors.find(x=>x.userId===ME.id&&x.weekKey===wk);
+  return '<section class="card form" style="margin-top:18px"><div class="card-h"><h2>Weekly behavioural &amp; competency assessment</h2>'+(b?'<span class="pill p-ok">Saved '+fmtD(parseISO(b.at))+'</span>':'<span class="pill p-warn">Not submitted</span>')+'</div><p class="muted" style="margin-bottom:12px">Rate yourself on each dimension for '+weekLabel(wk)+'. 1 is poor, 5 is excellent.</p>'+
+  '<form data-form="behavior" data-week="'+wk+'"><div class="stack" style="gap:10px">'+BEHAVIOR_DIMS.map(d=>'<div class="field" style="margin:0"><span class="lbl">'+d[1]+'</span><div class="rate" role="radiogroup" aria-label="'+esc(d[1])+' rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="dim_'+d[0]+'" value="'+n+'"'+(b&&b.scores[d[0]]===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
+  area('Comments','note',b&&b.note,{rows:2,req:false,max:400})+
+  '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(b?'Update assessment':'Save assessment')+'</button></div></form></section>';
+}
+
+VIEWS.history=()=>{
+  const V=scoped(),cw=curWeek();
+  const weeks=Array.from({length:12},(_,i)=>shiftWeek(cw,i-11)).reverse();
+  const rows=weeks.map(k=>{const p=V.plans.filter(x=>x.weekKey===k),a=V.assessments.filter(x=>x.weekKey===k);return{k,p:p.length,a:a.length,perf:wavg(a)}});
+  const avg=wavg(V.assessments.filter(a=>a.weekKey>=weeks[weeks.length-1]&&a.weekKey<=cw));
+  const series=weeks.slice().reverse().map(k=>rows.find(r=>r.k===k).perf);
+  const sc=rows.filter(r=>r.perf!=null).map(r=>r.perf),bestWeek=sc.length?Math.max(...sc):null;
+  return pageHead('My history','Your last 12 weeks.','',privacyNote('Visible to you, your team head and the executive team.'))+
+  '<div class="stack"><div class="g3">'+kpi('12-week average',fmtPct(avg),'Priority-weighted')+kpi('Weeks assessed',rows.filter(r=>r.a).length,'of 12')+kpi('Best week',fmtPct(bestWeek),'Highest weekly score')+'</div>'+
+  '<section class="card"><div class="card-h"><h2>Trend</h2></div>'+slot('hist-trend',W=>lineChart(W,[{name:'You',color:C.A,vals:series}],weeks.slice().reverse().map(k=>'W'+wkNum(k)),'Your weekly performance'))+'</section>'+
+  '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Week</th><th>Dates</th><th class="n">Plan items</th><th class="n">Assessed</th><th class="n">Score</th></tr></thead><tbody>'+
+  rows.map(r=>'<tr><td><b>'+weekLabel(r.k)+'</b></td><td>'+weekRange(r.k)+'</td><td class="n">'+r.p+'</td><td class="n">'+r.a+'</td><td class="n">'+(r.perf==null?'–':'<span class="pill '+bandCls(r.perf)+'">'+Math.round(r.perf)+'%</span>')+'</td></tr>').join('')+'</tbody></table></div></div>';
+};
+
+/* ================= TEAM HEAD ================= */
+const unitStaff=V=>V.users.filter(u=>u.role==='staff'&&u.active&&u.unitId===ME.unitId);
+VIEWS.unit=()=>{
+  const V=scoped(),wk=UI.week,cw=curWeek(),staff=unitStaff(V);
+  const rows=staff.map(u=>{const p=V.plans.filter(x=>x.userId===u.id&&x.weekKey===wk),a=V.assessments.filter(x=>x.userId===u.id&&x.weekKey===wk);return{u,p,a,perf:wavg(a),cause:topCause(a)}});
+  const m=computeMetrics(V,{type:'unit',id:ME.unitId},{weeks:[wk]});
+  const submitted=rows.filter(r=>r.p.length).length;
+  const gaps=[];
+  rows.forEach(r=>{
+    if(!r.p.length)gaps.push({tone:'p-warn',t:r.u.name+' has not submitted a plan',d:'No plan items for '+weekLabel(wk)+'.'});
+    else if(wk<cw&&r.a.length<r.p.length)gaps.push({tone:'p-warn',t:r.u.name+' has unassessed items',d:r.a.length+' of '+r.p.length+' items assessed.'});
+    if(r.perf!=null&&r.perf<60)gaps.push({tone:'p-bad',t:r.u.name+' is below 60%',d:'Main cause: '+(r.cause||'not recorded')+'.'});
+  });
+  const pendingReq=V.requests.filter(q=>q.status==='Pending').length;
+  const totalCause=sum(CAUSES.map(c=>m.causes[c]));
+  return pageHead(unitName(ME.unitId),'Unit overview for '+weekLabel(wk)+'.','<button class="btn sec" data-act="go" data-r="report">'+icon('doc',18)+'Divisional report</button>')+weekbar()+
+  '<div class="stack"><div class="g4">'+kpi('Unit performance',fmtPct(m.perf),m.assessed+' items assessed')+kpi('Plans submitted',submitted+' of '+staff.length,'Staff this week')+kpi('Issues logged',m.issues,'Management, resource, coordination')+kpi('Resource requests',pendingReq,'Waiting for approval',pendingReq?'orange':'')+'</div>'+
+  '<div class="g2"><section class="card"><div class="card-h"><h2>Staff</h2></div>'+(rows.length?'<div class="list">'+rows.map(r=>'<div class="row"><span class="avatar" style="background:#E6EEF9">'+esc(ini(r.u.name))+'</span><div class="who"><b>'+esc(r.u.name)+'</b><small>'+r.p.length+' planned · '+r.a.length+' assessed'+(r.cause?' · '+r.cause:'')+'</small></div><div class="end"><button class="btn sec sm" data-act="open-review" data-id="'+r.u.id+'">Review</button></div><div class="meter"><div class="num"><span>'+(r.perf==null?'No score':bandOf(r.perf).label)+'</span><span>'+fmtPct(r.perf)+'</span></div>'+bar(r.perf)+'</div></div>').join('')+'</div>':emptyBox('No staff in this unit','Ask the executive team to add staff to your unit.'))+'</section>'+
+  '<div class="stack"><section class="card"><div class="card-h"><h2>Gaps to follow up</h2></div>'+(gaps.length?gaps.map(g=>'<div class="issue"><div class="l"><span class="pill '+g.tone+'">'+(g.tone==='p-bad'?'Low score':'Follow up')+'</span><b>'+esc(g.t)+'</b></div><span class="muted">'+esc(g.d)+'</span></div>').join(''):'<p class="muted">No gaps found for this week.</p>')+'</section>'+
+  '<section class="card"><div class="card-h"><h2>Issues by cause</h2></div>'+CAUSES.map(c=>'<div class="divrow"><div class="top2"><span>'+c+'</span><span>'+m.causes[c]+'</span></div>'+bar(totalCause?m.causes[c]/totalCause*100:0,'#1D4E9A')+'</div>').join('')+'</section></div></div></div>';
+};
+
+VIEWS.review=()=>{
+  const V=scoped(),staff=unitStaff(V),wk=UI.week;
+  if(!staff.length)return pageHead('Staff review','')+emptyBox('No staff in your unit','Ask the executive team to add staff to your unit.');
+  if(!staff.find(s=>s.id===UI.reviewUser))UI.reviewUser=staff[0].id;
+  const u=staff.find(s=>s.id===UI.reviewUser);
+  const plans=V.plans.filter(p=>p.userId===u.id&&p.weekKey===wk).sort(byPri);
+  const asses=V.assessments.filter(a=>a.userId===u.id&&a.weekKey===wk);
+  const perf=wavg(asses);
+  const cw=curWeek(),weeks=Array.from({length:8},(_,i)=>shiftWeek(cw,i-8));
+  const vals=weeks.map(k=>wavg(V.assessments.filter(a=>a.userId===u.id&&a.weekKey===k)));
+  return pageHead('Staff review','Read plans and results, then add feedback.','',privacyNote('You can only see staff in your own unit.'))+
+  '<div class="tools"><div class="field"><label for="rv-u">Staff member</label><select id="rv-u" data-change="review-user">'+staff.map(s=>'<option value="'+s.id+'"'+(s.id===u.id?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div></div>'+weekbar()+
+  '<div class="stack"><div class="g3">'+kpi('Week score',fmtPct(perf),asses.length+' of '+plans.length+' items assessed')+kpi('Main cause of gaps',topCause(asses)||'None','This week')+kpi('Average rating',asses.length?mean(asses.map(a=>a.rating)).toFixed(1)+' / 5':'–','Quality of results')+'</div>'+
+  '<section class="card"><div class="card-h"><h2>Last 8 weeks</h2></div>'+slot('rv-trend',W=>lineChart(W,[{name:u.name,color:C.A,vals}],weeks.map(k=>'W'+wkNum(k)),'Performance of '+u.name))+'</section>'+
+  (plans.length?'<div class="stack">'+plans.map(p=>{const a=asses.find(x=>x.planId===p.id);
+    return '<article class="card plan">'+'<div class="plan-top"><span class="pill '+priCls(p.priority)+'">'+PRI[p.priority]+'</span>'+(a?'<span class="pill '+bandCls(a.ach)+'">'+a.ach+'% achieved</span><span class="pill p-blue">Rating '+a.rating+' / 5</span>'+(a.cause!=='None'?'<span class="pill p-orange">'+a.cause+'</span>':''):'<span class="pill p-warn">Not assessed</span>')+'</div><h3>'+esc(p.activity)+'</h3><p class="muted">Target: '+esc(p.target)+' · KPI: '+esc(p.kpi)+' · Resources: '+esc(p.resources||'none listed')+'</p>'+
+    (a&&a.note?'<div class="note"><b>Staff note</b>'+esc(a.note)+'</div>':'')+
+    (a?'<form class="form" data-form="headnote" data-id="'+a.id+'" style="margin-top:14px">'+area('Your feedback','headNote',a.headNote,{rows:2,req:false,max:300,sfx:a.id})+'<p class="form-err" role="alert"></p><div class="actions"><button class="btn sec sm" type="submit">Save feedback</button></div></form>':'')+'</article>'}).join('')+'</div>':emptyBox('No plan items','This person has not submitted a plan for '+weekLabel(wk)+'.'))+'</div>';
+};
+
+VIEWS.resources=()=>{
+  const V=scoped(),list=V.requests.slice().sort((a,b)=>b.at.localeCompare(a.at)||0);
+  const st={Pending:'p-warn',Approved:'p-ok',Declined:'p-bad'};
+  return pageHead('Resource requests','Ask management for what your unit needs.','<button class="btn" data-act="res-add">'+icon('plus',18)+'New request</button>')+
+  (list.length?'<div class="stack">'+list.map(q=>'<article class="card"><div class="card-h" style="margin-bottom:6px"><h2 style="font-size:18px">'+esc(q.item)+'</h2><span class="pill '+st[q.status]+'">'+q.status+'</span></div><p>'+esc(q.detail)+'</p><p class="muted" style="margin-top:6px;font-size:14px">Requested '+fmtDY(parseISO(q.at))+' · '+weekLabel(q.weekKey)+'</p>'+(q.decisionNote?'<div class="note"><b>Management response</b>'+esc(q.decisionNote)+'</div>':'')+(q.status==='Pending'?'<div class="card-actions"><button class="btn danger sm" data-act="res-del" data-id="'+q.id+'">Withdraw request</button></div>':'')+'</article>').join('')+'</div>':emptyBox('No requests yet','Send a request when your unit needs equipment, budget or transport.','<div><button class="btn" data-act="res-add">New request</button></div>'));
+};
+const reqForm=()=>'<form class="form" data-form="request">'+fld('What do you need?','item',{attrs:'maxlength="120"'})+area('Why it is needed','detail','',{rows:3,max:400})+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Send request</button></div></form>';
+
+VIEWS.report=()=>{
+  const V=scoped(),wk=UI.week,staff=unitStaff(V);
+  const m=computeMetrics(V,{type:'unit',id:ME.unitId},{weeks:[wk]});
+  const cur=V.reports.find(r=>r.unitId===ME.unitId&&r.weekKey===wk);
+  const submitted=staff.filter(u=>V.plans.some(p=>p.userId===u.id&&p.weekKey===wk)).length;
+  const past=V.reports.filter(r=>r.unitId===ME.unitId).sort((a,b)=>b.weekKey.localeCompare(a.weekKey)).slice(0,8);
+  const rows=(label,name)=>area(label,name,cur&&cur[name],{rows:2,req:false,max:400,ph:'One item per line'});
+  return pageHead('Divisional report','At the end of each week, answer to CEO/Management — matches the SLJI weekly monitoring format.','')+weekbar()+
+  '<div class="stack"><div class="g4">'+kpi('Unit performance',fmtPct(m.perf),'Calculated from staff')+kpi('Plans submitted',submitted+' of '+staff.length,'Staff')+kpi('Assessment coverage',fmtPct(m.rate),'Plans with results')+kpi('Issues logged',m.issues,'All causes')+'</div>'+
+  '<section class="card"><div class="card-h"><h2>'+(cur?'Update report':'Write report')+' for '+weekLabel(wk)+'</h2>'+(cur?'<span class="pill p-ok">Submitted '+fmtD(parseISO(cur.at))+'</span>':'<span class="pill p-warn">Not submitted</span>')+'</div>'+
+  '<form class="form" data-form="report">'+
+  '<h3 style="font-size:16px;margin:4px 0 2px">A. What went well?</h3>'+rows('Major achievements','achievements')+rows('Important successes','successes')+rows('Positive feedback received','positiveFeedback')+rows('Good practices identified','goodPractices')+
+  '<h3 style="font-size:16px;margin:10px 0 2px">B. What did not go well?</h3>'+rows('Missed targets','missedTargets')+rows('Delays','delays')+rows('Quality problems','qualityProblems')+rows('Coordination problems','coordinationProblems')+rows('Resource constraints','resourceConstraints')+
+  '<h3 style="font-size:16px;margin:10px 0 2px">C. What needs to change?</h3>'+area('Improvement required — action — responsible — deadline','improvements',cur&&cur.improvements,{rows:3,req:false,max:500,ph:'One line per item, e.g. Improve X — do Y — Ahmed — Fri'})+
+  '<h3 style="font-size:16px;margin:10px 0 2px">D. Key decisions</h3><p class="muted" style="margin-bottom:6px">Logged separately by the executive team and visible on the Divisions page.</p>'+
+  '<h3 style="font-size:16px;margin:10px 0 2px">E. Next week\'s commitment</h3>'+area('Priority activities for next week','nextWeek',cur&&cur.nextWeek,{rows:3,req:false,max:500,ph:'One item per line'})+
+  selBox('Overall unit rating','rating',[[5,'5 · Excellent'],[4,'4 · Good'],[3,'3 · Satisfactory'],[2,'2 · Needs support'],[1,'1 · Poor']],cur?cur.rating:clamp(Math.round((m.perf||60)/20),1,5))+
+  '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(cur?'Update and resend':'Submit to management')+'</button></div></form></section>'+
+  (past.length?'<section><div class="card-h"><h2>Previous reports</h2></div>'+past.map(r=>accItem(weekLabel(r.weekKey)+' · '+weekRange(r.weekKey),'Rating '+r.rating+' / 5',reportBody(r))).join('')+'</section>':'')+'</div>';
+};
+function reportBody(r){
+  const list=v=>{const items=String(v||'').split('\n').map(s=>s.trim()).filter(Boolean);return items.length?'<ul style="margin:6px 0 0 18px;padding:0">'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':''};
+  const sec=(t,v)=>v?'<p style="margin-top:8px"><b>'+t+'</b></p>'+list(v):'';
+  const newKeys=['achievements','successes','positiveFeedback','goodPractices','missedTargets','delays','qualityProblems','coordinationProblems','resourceConstraints','improvements','nextWeek'];
+  const hasNew=newKeys.some(k=>r[k]);
+  let out='';
+  if(r.summary||r.gaps||r.recommend)out+='<p><b>Summary.</b> '+esc(r.summary||'–')+'</p><p><b>Gaps.</b> '+esc(r.gaps||'–')+'</p><p><b>Recommendations.</b> '+esc(r.recommend||'–')+'</p>';
+  if(hasNew){
+    out+='<h4 style="margin-top:'+(out?'14px':'0')+'">A. What went well</h4>'+sec('Major achievements',r.achievements)+sec('Important successes',r.successes)+sec('Positive feedback received',r.positiveFeedback)+sec('Good practices identified',r.goodPractices)+
+    '<h4 style="margin-top:14px">B. What did not go well</h4>'+sec('Missed targets',r.missedTargets)+sec('Delays',r.delays)+sec('Quality problems',r.qualityProblems)+sec('Coordination problems',r.coordinationProblems)+sec('Resource constraints',r.resourceConstraints)+
+    (r.improvements?'<h4 style="margin-top:14px">C. What needs to change</h4>'+list(r.improvements):'')+
+    (r.nextWeek?'<h4 style="margin-top:14px">E. Next week\'s commitment</h4>'+list(r.nextWeek):'');
+  }
+  return out||'<p class="muted">No details recorded.</p>';
+}
+const accItem=(title,meta,body)=>'<div class="acc"><button class="acc-head" data-act="toggle" aria-expanded="false"><span><b>'+title+'</b><br><small class="muted">'+esc(meta)+'</small></span><span class="chev">'+icon('down')+'</span></button><div class="collapse"><div class="in"><div class="acc-body">'+body+'</div></div></div></div>';
+
+/* ================= EXECUTIVE ================= */
+function parseSubject(s){
+  if(s&&s.indexOf('u:')===0){const id=s.slice(2);if(DB.units.find(u=>u.id===id))return{type:'unit',id}}
+  if(s&&s.indexOf('p:')===0){const id=s.slice(2);if(DB.users.find(u=>u.id===id&&u.role==='staff'))return{type:'user',id}}
+  return{type:'org'};
+}
+function subjectLabel(s){
+  if(s.type==='unit')return unitName(s.id);
+  if(s.type==='user'){const u=DB.users.find(x=>x.id===s.id);return u.name+' ('+unitName(u.unitId)+')'}
+  return 'Whole organisation';
+}
+const periodOf=s=>s.mode==='week'?{mode:'week',from:s.wFrom,to:s.wTo}:{mode:'date',from:s.dFrom,to:s.dTo};
+function initCmd(){
+  const cw=curWeek();
+  const mk=(f,t)=>({subj:'org',mode:'week',wFrom:f,wTo:t,dFrom:iso(weekStart(f)),dTo:iso(weekEnd(t))});
+  UI.cmd={A:mk(shiftWeek(cw,-8),shiftWeek(cw,-1)),B:Object.assign(mk(shiftWeek(cw,-16),shiftWeek(cw,-9)),{on:false}),open:true};
+}
+function cmdModel(){
+  const sides=[['A',UI.cmd.A]];if(UI.cmd.B.on)sides.push(['B',UI.cmd.B]);
+  const R=sides.map(([k,s])=>{
+    const subj=parseSubject(s.subj),pp=periodOf(s),per=resolvePeriod(pp);
+    const m=computeMetrics(DB,subj,per);
+    const unitId=subj.type==='unit'?subj.id:null;
+    return{k,s,subj,per,m,color:C[k],label:subjectLabel(subj),plabel:periodLabel(pp,per),ranks:rankStaff(DB,unitId,per),unitId};
+  });
+  const divisions=activeUnits().map(u=>({u,vals:R.map(r=>computeMetrics(DB,{type:'unit',id:u.id},r.per).perf)})).sort((a,b)=>(b.vals[0]||0)-(a.vals[0]||0));
+  const wk=new Set(R[0].per.weeks);
+  const reports=DB.reports.filter(r=>wk.has(r.weekKey)&&(R[0].subj.type==='org'||(R[0].subj.type==='unit'&&r.unitId===R[0].subj.id)||(R[0].subj.type==='user'&&r.unitId===(DB.users.find(u=>u.id===R[0].subj.id)||{}).unitId))).sort((a,b)=>b.weekKey.localeCompare(a.weekKey));
+  return{R,cmp:R.length>1,divisions,reports,decisions:DB.decisions.slice().sort((a,b)=>b.date.localeCompare(a.date))};
+}
+function weekOptions(sel){
+  const cw=curWeek();let o='';
+  for(let i=60;i>=0;i--){const k=shiftWeek(cw,-i);o+='<option value="'+k+'"'+(k===sel?' selected':'')+'>'+k.slice(0,4)+' · Week '+wkNum(k)+' · '+fmtD(weekStart(k))+'</option>'}
+  return o;
+}
+function subjectOptions(sel){
+  let o='<option value="org"'+(sel==='org'?' selected':'')+'>Whole organisation</option><optgroup label="Units">';
+  activeUnits().forEach(u=>{o+='<option value="u:'+u.id+'"'+(sel==='u:'+u.id?' selected':'')+'>'+esc(u.name)+'</option>'});
+  o+='</optgroup>';
+  activeUnits().forEach(u=>{
+    const st=DB.users.filter(x=>x.role==='staff'&&x.active&&x.unitId===u.id);
+    if(st.length){o+='<optgroup label="Individuals · '+esc(u.name)+'">';st.forEach(x=>{o+='<option value="p:'+x.id+'"'+(sel==='p:'+x.id?' selected':'')+'>'+esc(x.name)+'</option>'});o+='</optgroup>'}
+  });
+  return o;
+}
+function sidePanel(r){
+  const k=r.k,s=r.s,cls=k==='A'?'a':'b';
+  return '<div class="fside '+cls+'"><h3><span><span class="dot" style="background:'+C[k]+'"></span>'+(k==='A'?'Subject A':'Subject B')+'</span>'+(k==='B'?'<button class="btn danger sm" data-act="cmd-rm-b">Remove</button>':'')+'</h3>'+
+  '<div class="field"><label for="s-'+k+'">Employee or unit</label><select id="s-'+k+'" data-change="cmd" data-side="'+k+'" data-field="subj">'+subjectOptions(s.subj)+'</select></div>'+
+  '<div class="field"><span class="lbl">Filter by</span><div class="seg" role="group"><button class="'+(s.mode==='week'?'on':'')+'" data-act="cmd-mode" data-side="'+k+'" data-mode="week">Week numbers</button><button class="'+(s.mode==='date'?'on':'')+'" data-act="cmd-mode" data-side="'+k+'" data-mode="date">Date range</button></div></div>'+
+  (s.mode==='week'?'<div class="row2"><div class="field"><label for="wf-'+k+'">From week</label><select id="wf-'+k+'" data-change="cmd" data-side="'+k+'" data-field="wFrom">'+weekOptions(s.wFrom)+'</select></div><div class="field"><label for="wt-'+k+'">To week</label><select id="wt-'+k+'" data-change="cmd" data-side="'+k+'" data-field="wTo">'+weekOptions(s.wTo)+'</select></div></div>':
+  '<div class="row2"><div class="field"><label for="df-'+k+'">Start date</label><input id="df-'+k+'" type="date" value="'+s.dFrom+'" max="'+iso(new Date())+'" data-change="cmd" data-side="'+k+'" data-field="dFrom"></div><div class="field"><label for="dt-'+k+'">End date</label><input id="dt-'+k+'" type="date" value="'+s.dTo+'" max="'+iso(new Date())+'" data-change="cmd" data-side="'+k+'" data-field="dTo"></div></div>')+
+  '<div class="fsum"><b>'+esc(r.label)+'</b><br>'+esc(r.plabel)+'</div></div>';
+}
+const dlt=(a,b,dec,suffix,higher)=>{
+  if(a==null||b==null)return '';
+  const d=a-b;if(Math.abs(d)<Math.pow(10,-dec)/2)return '<span class="pill p-mute">Same</span>';
+  const cls=higher===null?'p-blue':((higher?d>0:d<0)?'p-ok':'p-bad');
+  return '<span class="pill '+cls+'">'+(d>0?'+':'−')+Math.abs(d).toFixed(dec)+suffix+'</span>';
+};
+VIEWS.command=()=>{
+  if(!UI.cmd)initCmd();
+  const M=cmdModel(),R=M.R,A=R[0],B=R[1];
+  const kdefs=[
+    ['Overall performance',m=>m.perf,fmtPct,true,true,'Priority-weighted'],
+    ['Assessment coverage',m=>m.rate,fmtPct,true,true,'Plans with an assessment'],
+    ['Critical (P1) delivery',m=>m.p1,fmtPct,true,true,'Achievement on P1 items'],
+    ['On track',m=>m.onTrack,fmtPct,true,true,'Items at 75% or above'],
+    ['Issues logged',m=>m.issues,v=>v==null?'–':String(v),false,false,'Management, resource, coordination']];
+  const kcards=kdefs.map(d=>'<div class="card kpi"><div class="kpi-l">'+d[0]+'</div><div class="kpi-v" style="color:'+(M.cmp?C.A:'var(--navy)')+'">'+d[2](d[1](A.m))+'</div>'+(M.cmp?'<div class="kpi-b"><span class="dot" style="background:'+C.B+';margin:0"></span><b style="color:'+C.B+'">'+d[2](d[1](B.m))+'</b>'+dlt(d[1](A.m),d[1](B.m),d[3]?1:0,d[3]?' pts':'',d[4])+'</div>':'<div class="kpi-s">'+d[5]+'</div>')+'</div>').join('');
+  const cmpRows=[
+    ['Plan items',m=>m.planned,String,0,'',null],['Assessments recorded',m=>m.assessed,String,0,'',null],
+    ['Overall performance',m=>m.perf,fmtPct,1,' pts',true],['Assessment coverage',m=>m.rate,fmtPct,1,' pts',true],['Critical (P1) delivery',m=>m.p1,fmtPct,1,' pts',true],['On track (75% or above)',m=>m.onTrack,fmtPct,1,' pts',true],
+    ['Average quality rating',m=>m.rating,v=>v==null?'–':v.toFixed(1)+' / 5',1,'',true]
+    ].concat(CAUSES.map(c=>[c+' issues',m=>m.causes[c],String,0,'',false]));
+  const cmpTable=M.cmp?'<section class="card"><div class="card-h"><h2>Side-by-side comparison</h2><p>Subject A compared with Subject B. Green means A is better, red means B is better.</p></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Measure</th><th class="n"><span class="dot" style="background:'+C.A+'"></span>A</th><th class="n"><span class="dot" style="background:'+C.B+'"></span>B</th><th class="n">Difference</th></tr></thead><tbody>'+
+    cmpRows.map(d=>'<tr><td>'+d[0]+'</td><td class="n"><b>'+d[2](d[1](A.m))+'</b></td><td class="n"><b>'+d[2](d[1](B.m))+'</b></td><td class="n">'+dlt(d[1](A.m),d[1](B.m),d[3],d[4],d[5])+'</td></tr>').join('')+'</tbody></table></div></section>':'';
+  const legend=M.cmp?'<div class="legend"><span><span class="dot" style="background:'+C.A+'"></span>A · '+esc(A.label)+'</span><span><span class="dot" style="background:'+C.B+'"></span>B · '+esc(B.label)+'</span></div>':'';
+  const trendLabels=M.cmp?Array.from({length:Math.max(...R.map(r=>r.m.series.length))},(_,i)=>String(i+1)):A.m.series.map(x=>'W'+wkNum(x.key));
+  const trend='<section class="card"><div class="card-h"><h2>Weekly performance trend</h2><p>'+(M.cmp?'Points line up by week position within each period (1 is the first week).':'Priority-weighted average for each week in the period.')+'</p></div>'+
+    slot('cmd-trend',W=>lineChart(W,R.map((r,i)=>({name:'Subject '+r.k,color:r.color,dash:i===1,vals:r.m.series.map(x=>x.val)})),trendLabels,'Weekly performance trend'))+legend+'</section>';
+  const dist='<section class="card"><div class="card-h"><h2>Performance distribution</h2><p>Staff-weeks scored in each band.</p></div>'+slot('cmd-dist',W=>distChart(W,R.map(r=>({name:'Subject '+r.k,color:r.color,dist:r.m.dist}))))+legend+'</section>';
+  const divs='<section class="card"><div class="card-h"><h2>Division progress</h2><p>Average performance of each unit in the selected period.</p></div>'+M.divisions.map(d=>{
+    const hl=R.some(r=>(r.subj.type==='unit'&&r.subj.id===d.u.id)||(r.subj.type==='user'&&(DB.users.find(x=>x.id===r.subj.id)||{}).unitId===d.u.id));
+    return '<div class="divrow"><div class="top2"><span>'+esc(d.u.name)+(hl?' <span class="pill p-blue">Selected</span>':'')+'</span><span>'+d.vals.map((v,i)=>M.cmp?'<span style="color:'+C[R[i].k]+'">'+fmtPct(v)+'</span>':fmtPct(v)).join(' · ')+'</span></div>'+d.vals.map((v,i)=>bar(v,M.cmp?C[R[i].k]:null).replace('class="bar"','class="bar'+(i>0?' thin':'')+'"')).join('')+'</div>';
+  }).join('')+'</section>';
+  const tot=sum(CAUSES.map(c=>A.m.causes[c])),topC=CAUSES.slice().sort((a,b)=>A.m.causes[b]-A.m.causes[a])[0];
+  const byUnit=activeUnits().map(u=>{const l=A.m.asses.filter(a=>a.unitId===u.id);return{u,c:CAUSES.map(c=>l.filter(a=>a.cause===c).length)}}).filter(x=>sum(x.c)>0);
+  const issues=A.m.asses.filter(a=>a.cause!=='None').sort((a,b)=>b.weekKey.localeCompare(a.weekKey)||a.ach-b.ach).slice(0,5);
+  const bott='<section class="card"><div class="card-h"><h2>Bottlenecks</h2><p>'+(tot?'Most issues come from <b>'+topC+'</b> ('+Math.round(A.m.causes[topC]/tot*100)+'% of those logged for Subject A).':'No issues were logged for Subject A in this period.')+'</p></div>'+
+    CAUSES.map(c=>'<div class="divrow"><div class="top2"><span>'+c+'</span><span>'+R.map((r,i)=>M.cmp?'<span style="color:'+r.color+'">'+r.m.causes[c]+'</span>':r.m.causes[c]).join(' · ')+'</span></div>'+R.map((r,i)=>{const t=sum(CAUSES.map(x=>r.m.causes[x]));return bar(t?r.m.causes[c]/t*100:0,M.cmp?r.color:'#D9651B').replace('class="bar"','class="bar'+(i>0?' thin':'')+'"')}).join('')+'</div>').join('')+
+    (byUnit.length?'<h3 style="font-size:16px;margin:18px 0 10px">By unit (Subject A)</h3><div class="tbl-wrap"><table class="tbl" style="min-width:420px"><thead><tr><th>Unit</th>'+CAUSES.map(c=>'<th class="n">'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+byUnit.map(x=>'<tr><td>'+esc(x.u.name)+'</td>'+x.c.map(n=>'<td class="n">'+n+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'')+
+    (issues.length?'<h3 style="font-size:16px;margin:18px 0 10px">Recent issue notes</h3>'+issues.map(a=>'<div class="issue"><div class="l"><span class="pill p-orange">'+a.cause+'</span><b>'+esc(userName(a.userId))+'</b><span class="muted">'+esc(unitName(a.unitId))+' · '+weekLabel(a.weekKey)+'</span></div><span>'+esc(a.note||'No note')+'</span></div>').join(''):'')+'</section>';
+  const rankList=(list,all,low)=>list.length?list.map(x=>'<div class="rank'+(low?' low':'')+'"><span class="pos">'+(all.indexOf(x)+1)+'</span><div><b>'+esc(x.user.name)+'</b><small>'+esc(unitName(x.user.unitId))+' · '+x.n+' items</small></div><span class="pct">'+Math.round(x.perf)+'%</span></div>').join(''):'<p class="muted">No scored staff in this period.</p>';
+  const rankBlock=r=>{const top=r.ranks.slice(0,5),low=r.ranks.slice(-5).filter(x=>!top.includes(x)).reverse();
+    return '<section class="card"><div class="card-h"><h2>Rankings'+(M.cmp?' · <span style="color:'+r.color+'">Subject '+r.k+'</span>':'')+'</h2><p>'+(r.unitId?esc(unitName(r.unitId))+' staff':'All staff')+' · '+esc(r.plabel)+'</p></div><div class="g2"><div><h3 style="font-size:16px;margin-bottom:6px">Top performers</h3>'+rankList(top,r.ranks,false)+'</div><div><h3 style="font-size:16px;margin-bottom:6px">Needs support</h3>'+rankList(low,r.ranks,true)+'</div></div></section>'};
+  const decisions='<section class="card"><div class="card-h"><h2>Key decisions log</h2><button class="btn sm" data-act="dec-add">'+icon('plus',16)+'Log decision</button></div>'+(M.decisions.length?M.decisions.map(d=>'<div class="decision"><div><h3>'+esc(d.title)+'</h3>'+(d.detail?'<p class="muted">'+esc(d.detail)+'</p>':'')+'<div class="meta"><span>'+fmtDY(parseISO(d.date))+'</span>'+(d.unitId?'<span class="pill p-blue">'+esc(unitName(d.unitId))+'</span>':'')+'<span class="pill '+(d.status==='Done'?'p-ok':'p-warn')+'">'+d.status+'</span></div></div><div class="head-actions" style="align-content:start"><button class="btn sec sm" data-act="dec-toggle" data-id="'+d.id+'">'+(d.status==='Done'?'Reopen':'Mark done')+'</button><button class="icon-btn" style="width:38px;height:38px" data-act="dec-del" data-id="'+d.id+'" aria-label="Delete decision">'+icon('trash',16)+'</button></div></div>').join(''):emptyBox('No decisions logged','Record decisions so the team can follow them up.'))+'</section>';
+  const reps='<section class="card"><div class="card-h"><h2>Divisional reports from team heads</h2><p>Reports for the weeks in Subject A\'s period.</p></div>'+(M.reports.length?M.reports.slice(0,8).map(r=>accItem(esc(unitName(r.unitId))+' · '+weekLabel(r.weekKey),'By '+userName(r.headId)+' · Rating '+r.rating+' / 5 · Score '+fmtPct(r.avg),reportBody(r))).join(''):'<p class="muted">No reports were submitted for this period.</p>')+'</section>';
+  return pageHead('Executive command center','Decision-making view for the Ameer, CEO and General Secretary.','<button class="btn accent" data-act="export-pdf">'+icon('download',18)+'Export PDF</button>')+
+  '<div class="stack"><section class="card filters'+(UI.cmd.open?' open':'')+'"><button class="filters-toggle" data-act="cmd-toggle" aria-expanded="'+(UI.cmd.open?'true':'false')+'"><h2>Filters and comparison</h2><span class="chev">'+icon('down')+'</span></button>'+
+  '<div class="collapse"><div class="in"><div class="fgrid">'+sidePanel(A)+(B?sidePanel(B):'<div class="fadd"><b style="color:var(--navy)">Compare with something else</b><span>Add a second employee, unit or period to see them side by side.</span><button class="btn sec" data-act="cmd-add-b">'+icon('plus',18)+'Add comparison</button></div>')+'</div><p class="muted" style="font-size:14px;margin-top:12px">Weeks that overlap a custom date range are included in full.</p></div></div></section>'+
+  '<div class="g5">'+kcards+'</div>'+cmpTable+'<div class="g2">'+trend+dist+'</div><div class="g2">'+divs+bott+'</div>'+R.map(rankBlock).join('')+'<div class="g2">'+decisions+reps+'</div></div>';
+};
+function decisionForm(){
+  return '<form class="form" data-form="decision">'+fld('Decision','title',{attrs:'maxlength="160"'})+area('Details','detail','',{rows:3,req:false,max:400})+
+  '<div class="row2">'+selBox('Related unit','unitId',[['','Whole organisation']].concat(activeUnits().map(u=>[u.id,u.name])),'',{req:false})+selBox('Status','status',[['Open','Open'],['Done','Done']],'Open')+'</div>'+
+  '<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Log decision</button></div></form>';
+}
+
+VIEWS.divisions=()=>{
+  const wk=UI.week;
+  const cards=activeUnits().map(u=>{
+    const m=computeMetrics(DB,{type:'unit',id:u.id},{weeks:[wk]});
+    const rep=DB.reports.find(r=>r.unitId===u.id&&r.weekKey===wk);
+    const headsList=DB.users.filter(x=>x.active&&x.role==='head'&&x.unitId===u.id);
+    const heads=headsList.map(x=>x.name).join(', ')||'No team head assigned';
+    const staff=DB.users.filter(x=>x.active&&x.role==='staff'&&x.unitId===u.id);
+    const sub=staff.filter(s=>DB.plans.some(p=>p.userId===s.id&&p.weekKey===wk)).length;
+    const hr=(DB.headReviews||[]).find(x=>x.unitId===u.id&&x.headId===(headsList[0]&&headsList[0].id)&&x.weekKey===wk);
+    const reviewBtn=headsList.length?'<button class="btn sec sm" data-act="head-review" data-unit="'+u.id+'" data-head="'+headsList[0].id+'">'+(hr?'Update head review':'Review head')+'</button>':'';
+    return '<article class="card"><div class="card-h" style="margin-bottom:8px"><h2>'+esc(u.name)+'</h2>'+(rep?'<span class="pill p-ok">Report submitted</span>':'<span class="pill p-warn">No report</span>')+'</div><p class="muted" style="margin-bottom:12px">'+esc(heads)+(hr&&hr.weighted!=null?' · Head score '+hr.weighted+'%':'')+'</p><div class="top2 divrow" style="border:0;padding:0"><span>Performance</span><span>'+fmtPct(m.perf)+'</span></div>'+bar(m.perf)+'<p class="muted" style="margin-top:10px;font-size:14px">'+sub+' of '+staff.length+' staff submitted plans · '+m.assessed+' items assessed · '+m.issues+' issues</p>'+(rep?'<div style="margin-top:12px">'+accItem('Read the report','Rating '+rep.rating+' / 5',reportBody(rep))+'</div>':'')+(hr?'<div style="margin-top:8px">'+accItem('Head review · '+hr.weighted+'% weighted score','As of '+fmtD(parseISO(hr.at)),headReviewBody(hr))+'</div>':'')+'<div class="card-actions">'+reviewBtn+'</div></article>';
+  }).join('');
+  const st={Pending:'p-warn',Approved:'p-ok',Declined:'p-bad'};
+  const reqs=DB.requests.slice().sort((a,b)=>(a.status==='Pending'?0:1)-(b.status==='Pending'?0:1)||b.at.localeCompare(a.at));
+  return pageHead('Divisions','Reports and resource requests from every unit.')+weekbar()+
+  '<div class="stack"><div class="g3">'+cards+'</div><section class="card"><div class="card-h"><h2>Resource requests</h2></div>'+(reqs.length?reqs.slice(0,12).map(q=>'<div class="decision"><div><h3>'+esc(q.item)+'</h3><p class="muted">'+esc(q.detail)+'</p><div class="meta"><span class="pill p-blue">'+esc(unitName(q.unitId))+'</span><span>'+fmtDY(parseISO(q.at))+'</span><span class="pill '+st[q.status]+'">'+q.status+'</span></div>'+(q.decisionNote?'<div class="note"><b>Response</b>'+esc(q.decisionNote)+'</div>':'')+'</div>'+(q.status==='Pending'?'<div class="head-actions" style="align-content:start"><button class="btn sm" data-act="res-approve" data-id="'+q.id+'">Approve</button><button class="btn danger sm" data-act="res-decline" data-id="'+q.id+'">Decline</button></div>':'')+'</div>').join(''):emptyBox('No requests','Team heads can send resource requests from their Resources page.'))+'</section></div>';
+};
+function headReviewBody(hr){
+  const pct=w=>Math.round(w/5*100);
+  return '<p class="muted" style="margin-bottom:8px">Weighted performance areas (Weekly_Plan_Divisional_Heads format)</p>'+
+  HEAD_AREAS.map(a=>'<div class="divrow"><div class="top2"><span>'+a[1]+' ('+a[2]+'%)</span><span>'+hr.areas[a[0]]+' / 5</span></div>'+bar(pct(hr.areas[a[0]]),'#1D4E9A')+'</div>').join('')+
+  '<p class="muted" style="margin:14px 0 8px"><b>Weekly review</b></p><div class="tbl-wrap"><table class="tbl"><tbody>'+
+  HEAD_REVIEW_Q.map(q=>'<tr><td>'+esc(q[1])+'</td><td class="n"><span class="pill '+(hr.review[q[0]]==='Yes'?'p-ok':hr.review[q[0]]==='Partly'?'p-warn':'p-bad')+'">'+hr.review[q[0]]+'</span></td></tr>').join('')+
+  '</tbody></table></div>'+(hr.remarks?'<p style="margin-top:10px"><b>Remarks.</b> '+esc(hr.remarks)+'</p>':'');
+}
+function headReviewForm(unitId,headId){
+  const hr=(DB.headReviews||[]).find(x=>x.unitId===unitId&&x.headId===headId&&x.weekKey===UI.week);
+  return '<form class="form" data-form="headreview" data-unit="'+unitId+'" data-head="'+headId+'">'+
+  '<p class="muted" style="margin-bottom:10px">Weighted performance areas — score each 1 (poor) to 5 (excellent).</p>'+
+  '<div class="stack" style="gap:10px">'+HEAD_AREAS.map(a=>'<div class="field" style="margin:0"><span class="lbl">'+a[1]+' <span class="opt">'+a[2]+'% weight</span></span><div class="rate" role="radiogroup" aria-label="'+esc(a[1])+' rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="area_'+a[0]+'" value="'+n+'"'+(hr&&hr.areas[a[0]]===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
+  '<p class="muted" style="margin:16px 0 8px"><b>Weekly review of the Divisional Head</b></p><div class="stack" style="gap:8px">'+HEAD_REVIEW_Q.map(q=>'<div class="field" style="margin:0"><span class="lbl" style="font-size:14px">'+esc(q[1])+'</span><div class="chips">'+['Yes','Partly','No'].map(v=>'<label class="chip"><input type="radio" name="q_'+q[0]+'" value="'+v+'"'+((hr?hr.review[q[0]]:'')===v?' checked':'')+' required><span>'+v+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
+  area('Remarks','remarks',hr&&hr.remarks,{rows:3,req:false,max:500})+
+  '<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save head review</button></div></form>';
+}
+
+VIEWS.admin=()=>{
+  const tabs='<div class="seg" role="tablist" style="margin-bottom:18px"><button class="'+(UI.tab==='units'?'on':'')+'" data-act="tab" data-t="units">Units</button><button class="'+(UI.tab==='people'?'on':'')+'" data-act="tab" data-t="people">People</button></div>';
+  return pageHead('Organisation','Add or remove units and staff to match the organisation chart.','<button class="btn sec" data-act="reset-demo">Reset demo data</button>')+tabs+(UI.tab==='units'?adminUnits():adminPeople());
+};
+function adminUnits(){
+  const units=activeUnits();
+  return '<div class="stack"><section class="card"><div class="card-h"><h2>Add a unit</h2></div><form class="inline-form" data-form="unit-add"><div class="field"><label for="nu">Unit name</label><input id="nu" name="name" required maxlength="60" placeholder="For example: Research and Planning"></div><button class="btn" type="submit">'+icon('plus',18)+'Add unit</button></form><p class="form-err" role="alert" style="margin-top:8px"></p></section>'+
+  '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Unit</th><th>Team head</th><th class="n">Staff</th><th></th></tr></thead><tbody>'+units.map(u=>{
+    const heads=DB.users.filter(x=>x.active&&x.role==='head'&&x.unitId===u.id),staff=DB.users.filter(x=>x.active&&x.role==='staff'&&x.unitId===u.id);
+    return '<tr><td><b>'+esc(u.name)+'</b></td><td>'+(heads.length?esc(heads.map(h=>h.name).join(', ')):'<span class="pill p-warn">Not assigned</span>')+'</td><td class="n">'+staff.length+'</td><td style="text-align:right;white-space:nowrap"><button class="btn sec sm" data-act="unit-rename" data-id="'+u.id+'">Rename</button> <button class="btn danger sm" data-act="unit-del" data-id="'+u.id+'">Remove</button></td></tr>'}).join('')+'</tbody></table></div></div>';
+}
+function adminPeople(){
+  const q=UI.q.trim().toLowerCase();
+  let list=DB.users.filter(u=>u.active);
+  if(q)list=list.filter(u=>(u.name+' '+u.username).toLowerCase().includes(q));
+  if(UI.roleF)list=list.filter(u=>u.role===UI.roleF);
+  if(UI.unitF)list=list.filter(u=>u.unitId===UI.unitF);
+  list.sort((a,b)=>({admin:0,head:1,staff:2}[a.role]-{admin:0,head:1,staff:2}[b.role])||a.name.localeCompare(b.name));
+  return '<div class="stack"><div class="tools"><div class="field"><label for="pq">Search</label><input id="pq" type="search" value="'+esc(UI.q)+'" data-live="q" placeholder="Name or username"></div><div class="field" style="max-width:190px"><label for="pr">Role</label><select id="pr" data-change="people-filter" data-f="roleF"><option value="">All roles</option>'+['staff','head','admin'].map(r=>'<option value="'+r+'"'+(UI.roleF===r?' selected':'')+'>'+ROLE_LABEL[r]+'</option>').join('')+'</select></div><div class="field" style="max-width:230px"><label for="pu">Unit</label><select id="pu" data-change="people-filter" data-f="unitF"><option value="">All units</option>'+activeUnits().map(u=>'<option value="'+u.id+'"'+(UI.unitF===u.id?' selected':'')+'>'+esc(u.name)+'</option>').join('')+'</select></div><button class="btn" data-act="person-add">'+icon('plus',18)+'Add person</button></div>'+
+  (list.length?'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Unit</th><th></th></tr></thead><tbody>'+list.map(u=>'<tr><td><b>'+esc(u.name)+'</b><br><small class="muted">'+esc(u.title||'')+'</small></td><td>'+esc(u.username)+'</td><td><span class="pill '+(u.role==='admin'?'p-orange':u.role==='head'?'p-blue':'p-mute')+'">'+ROLE_LABEL[u.role]+'</span></td><td>'+(u.unitId?esc(unitName(u.unitId)):'–')+'</td><td style="text-align:right;white-space:nowrap"><button class="btn sec sm" data-act="person-edit" data-id="'+u.id+'">Edit</button> <button class="btn sec sm" data-act="person-pw" data-id="'+u.id+'">Reset password</button> <button class="btn danger sm" data-act="person-del" data-id="'+u.id+'">Remove</button></td></tr>').join('')+'</tbody></table></div>':emptyBox('No one matches','Try a different search or filter.'))+
+  '<p class="muted" style="font-size:14px">Removed people can no longer sign in. Their past records stay in reports.</p></div>';
+}
+function personForm(u){
+  const units=activeUnits().map(x=>[x.id,x.name]);
+  return '<form class="form" data-form="person" data-id="'+(u?u.id:'')+'">'+fld('Full name','name',{value:u&&u.name,attrs:'maxlength="80"'})+
+  '<div class="row2">'+fld('Username','username',{value:u&&u.username,attrs:'maxlength="30" autocapitalize="none" spellcheck="false"',help:'Letters, numbers, dots and dashes.'})+fld('Job title','title',{value:u&&u.title,req:false,attrs:'maxlength="60"'})+'</div>'+
+  '<div class="row2">'+selBox('Role','role',[['staff','Staff'],['head','Team Head'],['admin','Executive (Admin, CEO, Ameer, GS)']],u?u.role:'staff')+selBox('Unit','unitId',[['','No unit (executives)']].concat(units),u?u.unitId||'':units[0]?units[0][0]:'',{req:false})+'</div>'+
+  (u?'':fld('Temporary password','password',{type:'password',attrs:'minlength="8" autocomplete="new-password"',help:'At least 8 characters. Ask the person to change it after signing in.'}))+
+  '<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">'+(u?'Save changes':'Add person')+'</button></div></form>';
+}
+const pwForm=(kind,id)=>'<form class="form" data-form="'+kind+'" data-id="'+(id||'')+'">'+(kind==='account-pw'?fld('Current password','current',{type:'password',attrs:'autocomplete="current-password"'}):'')+fld('New password','password',{type:'password',attrs:'minlength="8" autocomplete="new-password"',help:'At least 8 characters.'})+(kind==='account-pw'?fld('Repeat new password','again',{type:'password',attrs:'autocomplete="new-password"'}):'')+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save password</button></div></form>';
+
+/* =====================================================================
+   Part 5: PDF export (executive only)
+   ===================================================================== */
+const P=s=>String(s==null?'':s).replace(/[–—−]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/≥/g,'>=').replace(/[^\x20-\x7E\u00A0-\u00FF]/g,'');
+const hexRgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+async function exportPDF(){
+  if(ME.role!=='admin'){toast('Only executives can export reports.','bad');return}
+  const lib=window.jspdf&&window.jspdf.jsPDF;
+  if(!lib){toast('The PDF tool did not load. Check the connection and try again.','bad');return}
+  const M=cmdModel(),R=M.R,A=R[0],B=R[1];
+  const doc=new lib({unit:'pt',format:'a4'});
+  const PW=595,PH=842,ML=40,CWID=PW-2*ML;
+  let y=0;
+  doc.setFillColor(15,47,94);doc.rect(0,0,PW,80,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(19);doc.text("Sri Lanka Jama'athe Islami",ML,36);
+  doc.setFont('helvetica','normal');doc.setFontSize(11);doc.text('Performance Report - Executive Command Center',ML,56);
+  doc.setFontSize(9);doc.text('Generated '+P(fmtDY(new Date()))+' by '+P(ME.name),PW-ML,36,{align:'right'});doc.text('Confidential - executive use only',PW-ML,56,{align:'right'});
+  y=106;doc.setTextColor(20,33,58);
+  const ensure=h=>{if(y+h>PH-60){doc.addPage();y=56}};
+  const h2=t=>{ensure(40);doc.setFont('helvetica','bold');doc.setFontSize(12.5);doc.setTextColor(15,47,94);doc.text(P(t),ML,y);y+=6;doc.setDrawColor(211,220,234);doc.line(ML,y,PW-ML,y);y+=16;doc.setTextColor(20,33,58)};
+  const table=(head,body,cols)=>{doc.autoTable({startY:y,head:[head],body,theme:'grid',margin:{left:ML,right:ML},styles:{font:'helvetica',fontSize:8.5,cellPadding:4,textColor:[20,33,58],lineColor:[211,220,234],lineWidth:.5},headStyles:{fillColor:[15,47,94],textColor:255},alternateRowStyles:{fillColor:[243,246,251]},columnStyles:cols||{}});y=doc.lastAutoTable.finalY+20};
+  // scope
+  h2('Report scope');
+  R.forEach(r=>{doc.setFillColor.apply(doc,hexRgb(r.color));doc.rect(ML,y-8,8,8,'F');doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text(P((R.length>1?'Subject '+r.k+': ':'Subject: ')+r.label),ML+14,y);y+=13;doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.text(P('Period: '+r.plabel),ML+14,y);y+=20});
+  // summary
+  h2('Key measures');
+  const rows=[['Plan items',m=>m.planned,String],['Assessments recorded',m=>m.assessed,String],['Overall performance',m=>m.perf,fmtPct],['Assessment coverage',m=>m.rate,fmtPct],['Critical (P1) delivery',m=>m.p1,fmtPct],['On track (75% or above)',m=>m.onTrack,fmtPct],['Average quality rating',m=>m.rating,v=>v==null?'-':v.toFixed(1)+' / 5']].concat(CAUSES.map(c=>[c+' issues',m=>m.causes[c],String]));
+  table(['Measure'].concat(R.map(r=>'Subject '+r.k)).concat(B?['Difference (A - B)']:[]),rows.map(d=>{
+    const a=d[1](A.m),b=B?d[1](B.m):null;
+    const diff=B&&a!=null&&b!=null?((a-b>0?'+':'')+(Math.round((a-b)*10)/10)+(d[2]===fmtPct?' pts':'')):'-';
+    return [P(d[0])].concat(R.map(r=>P(d[2](d[1](r.m))))).concat(B?[P(diff)]:[]);
+  }),{0:{cellWidth:180}});
+  // weekly table
+  h2('Weekly performance');
+  const nmax=Math.max(...R.map(r=>r.m.series.length));
+  const wrows=[];for(let i=0;i<Math.min(nmax,40);i++)wrows.push([P(R.map(r=>r.m.series[i]?('W'+wkNum(r.m.series[i].key)):'-').join(' / '))].concat(R.map(r=>r.m.series[i]&&r.m.series[i].val!=null?Math.round(r.m.series[i].val)+'%':'-')));
+  table([R.length>1?'Week (A / B)':'Week'].concat(R.map(r=>'Subject '+r.k)),wrows);
+  // distribution (drawn bars)
+  h2('Performance distribution (staff-weeks per band)');
+  const dmax=Math.max(1,...R.flatMap(r=>r.m.dist.map(b=>b.n)));
+  BANDS.forEach((b,bi)=>{
+    ensure(R.length*14+10);
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(20,33,58);doc.text(P(b.label+' ('+b.range+')'),ML,y+8);
+    R.forEach((r,i)=>{const n=r.m.dist[bi].n,w=(n/dmax)*260;doc.setFillColor(225,232,243);doc.rect(ML+130,y+i*13,260,10,'F');doc.setFillColor.apply(doc,hexRgb(R.length>1?r.color:b.color));if(w>0)doc.rect(ML+130,y+i*13,w,10,'F');doc.setFont('helvetica','normal');doc.text(String(n),ML+398,y+i*13+8)});
+    y+=R.length*13+8;
+  });
+  y+=10;
+  // divisions (drawn bars)
+  h2('Division progress');
+  M.divisions.forEach(d=>{
+    ensure(R.length*13+16);
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(20,33,58);doc.text(P(d.u.name),ML,y+8);
+    d.vals.forEach((v,i)=>{doc.setFillColor(225,232,243);doc.rect(ML+170,y+i*13,240,10,'F');const c=R.length>1?hexRgb(R[i].color):hexRgb(v==null?'#9FB0CB':bandOf(v).color);doc.setFillColor(c[0],c[1],c[2]);if(v!=null)doc.rect(ML+170,y+i*13,240*clamp(v,0,100)/100,10,'F');doc.setFont('helvetica','normal');doc.text(fmtPct(v),ML+418,y+i*13+8)});
+    y+=R.length*13+10;
+  });
+  y+=8;
+  // bottlenecks
+  h2('Bottlenecks');
+  table(['Cause'].concat(R.map(r=>'Subject '+r.k+' (count)')),CAUSES.map(c=>[c].concat(R.map(r=>{const t=sum(CAUSES.map(x=>r.m.causes[x]));return r.m.causes[c]+(t?' ('+Math.round(r.m.causes[c]/t*100)+'%)':'')}))));
+  // rankings
+  R.forEach(r=>{
+    const top=r.ranks.slice(0,5),low=r.ranks.slice(-5).filter(x=>!top.includes(x)).reverse();
+    h2('Top performers'+(R.length>1?' - Subject '+r.k:''));
+    table(['#','Name','Unit','Score','Items'],top.map((x,i)=>[String(i+1),P(x.user.name),P(unitName(x.user.unitId)),Math.round(x.perf)+'%',String(x.n)]));
+    h2('Needs support'+(R.length>1?' - Subject '+r.k:''));
+    table(['Name','Unit','Score','Items'],low.map(x=>[P(x.user.name),P(unitName(x.user.unitId)),Math.round(x.perf)+'%',String(x.n)]));
+  });
+  // decisions
+  h2('Key decisions log');
+  table(['Date','Decision','Unit','Status'],M.decisions.slice(0,15).map(d=>[P(fmtDY(parseISO(d.date))),P(d.title),P(d.unitId?unitName(d.unitId):'Organisation'),d.status]),{1:{cellWidth:240}});
+  // footer
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(74,90,120);doc.text('SLJI Performance Monitoring System',ML,PH-24);doc.text('Page '+i+' of '+n,PW-ML,PH-24,{align:'right'})}
+  const name='SLJI-Performance-Report-'+P(A.label).replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+iso(new Date())+'.pdf';
+  const blob=doc.output('blob');
+  try{
+    const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+    if(dl){await dl.save({filename:name,data:blob});toast('PDF report ready','ok');return}
+  }catch(e){if(e&&e.code==='declined')return;toast('The PDF could not be saved here. Try again or open the app in a full browser tab.','bad');return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();toast('PDF report ready','ok')}catch(e){toast('The PDF could not be downloaded in this view.','bad')}
+}
+
+/* =====================================================================
+   Part 6: actions, forms, routing
+   ===================================================================== */
+function go(r,anim){
+  if(!ME)return;
+  if(!NAV[ME.role].some(n=>n[0]===r))r=HOME[ME.role];
+  UI.route=r;if(!UI.week)UI.week=curWeek();
+  draw(anim!==false);
+}
+function draw(anim){
+  const app=$('#app'),y=window.scrollY;
+  CH={};
+  try{
+    app.innerHTML=ME?shell():loginView();
+    if(ME){const v=$('#view');v.innerHTML=(VIEWS[UI.route]||VIEWS[HOME[ME.role]])();if(anim)v.classList.add('enter')}
+  }catch(err){
+    console.error(err);
+    app.innerHTML='<div class="fatal"><h1>Something went wrong</h1><p class="muted">Reload the page to continue. Your saved data is safe.</p><button class="btn" onclick="location.reload()">Reload</button></div>';
+    return;
+  }
+  paintCharts();animateBars();
+  window.scrollTo(0,anim?0:y);
+}
+function signIn(u){
+  ME=u;ssSet(SKEY,u.id);UI.week=curWeek();UI.route=HOME[u.role];UI.reviewUser=null;UI.cmd=null;
+  resetIdle();draw(true);
+}
+function signOut(msg){
+  ME=null;ssSet(SKEY,null);UI.route='';closeModal();draw(false);
+  if(msg)toast(msg);
+}
+let idleT=null;
+function resetIdle(){clearTimeout(idleT);if(ME)idleT=setTimeout(()=>{if(ME)signOut('Signed out after 20 minutes of inactivity.')},20*60*1000)}
+['click','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
+
+const needRole=r=>{if(!ME||ME.role!==r){toast('You do not have access to that action.','bad');return false}return true};
+
+const ACT={ /* click actions */
+  go:el=>go(el.dataset.r),
+  goweek:el=>{UI.week=el.dataset.w;go(el.dataset.r)},
+  'wk-prev':()=>{UI.week=shiftWeek(UI.week,-1);draw(false)},
+  'wk-next':()=>{UI.week=shiftWeek(UI.week,1);draw(false)},
+  'wk-now':()=>{UI.week=curWeek();draw(false)},
+  menu:el=>{const w=el.closest('.menu-wrap');const open=w.classList.contains('open');$$('.menu-wrap.open').forEach(x=>x.classList.remove('open'));if(!open)w.classList.add('open')},
+  logout:()=>signOut(),
+  account:()=>{$$('.menu-wrap.open').forEach(x=>x.classList.remove('open'));openModal('Account and password','<p class="muted" style="margin-bottom:14px">'+esc(ME.name)+' · '+esc(ME.username)+' · '+ROLE_LABEL[ME.role]+(ME.unitId?' · '+esc(unitName(ME.unitId)):'')+'</p>'+pwForm('account-pw'))},
+  'close-modal':()=>closeModal(),
+  'confirm-yes':()=>{const cb=confirmCb;confirmCb=null;closeModal();if(cb)cb()},
+  'pw-toggle':el=>{const i=$('#lg-p');const show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'Hide':'Show'},
+  demo:el=>{$('#lg-u').value=el.dataset.u;$('#lg-p').value='Slji@2026';$('#lg-p').focus()},
+  toggle:el=>{const a=el.closest('.acc');const open=a.classList.toggle('open');el.setAttribute('aria-expanded',open)},
+  /* staff */
+  'plan-add':()=>openModal('Add plan item · '+weekLabel(UI.week),planForm(null)),
+  'plan-edit':el=>{const p=DB.plans.find(x=>x.id===el.dataset.id);if(!p||p.userId!==ME.id)return;openModal('Edit plan item',planForm(p))},
+  'plan-del':el=>{const p=DB.plans.find(x=>x.id===el.dataset.id);if(!p||p.userId!==ME.id)return;confirmBox('Delete this plan item?','"'+p.activity+'" will be removed from '+weekLabel(p.weekKey)+'.','Delete',()=>{DB.plans=DB.plans.filter(x=>x.id!==p.id);persist();toast('Plan item deleted');draw(false)})},
+  'set-ach':el=>{const f=el.closest('form');f.elements.ach.value=el.dataset.v;f.elements.ach.focus()},
+  /* head */
+  'open-review':el=>{if(ME.role!=='head')return;UI.reviewUser=el.dataset.id;go('review')},
+  'res-add':()=>openModal('New resource request',reqForm()),
+  'res-del':el=>{const q=DB.requests.find(x=>x.id===el.dataset.id);if(!q||ME.role!=='head'||q.unitId!==ME.unitId||q.status!=='Pending')return;confirmBox('Withdraw this request?','"'+q.item+'" will be removed.','Withdraw',()=>{DB.requests=DB.requests.filter(x=>x.id!==q.id);persist();toast('Request withdrawn');draw(false)})},
+  /* executive */
+  'cmd-toggle':()=>{UI.cmd.open=!UI.cmd.open;const f=$('.filters');if(f){f.classList.toggle('open',UI.cmd.open);const b=f.querySelector('.filters-toggle');b&&b.setAttribute('aria-expanded',UI.cmd.open)}},
+  'cmd-mode':el=>{if(!needRole('admin'))return;const s=UI.cmd[el.dataset.side];const m=el.dataset.mode;if(s.mode===m)return;
+    if(m==='date'){s.dFrom=iso(weekStart(s.wFrom<=s.wTo?s.wFrom:s.wTo));s.dTo=iso(weekEnd(s.wFrom<=s.wTo?s.wTo:s.wFrom))}
+    else{s.wFrom=weekKeyOf(parseISO(s.dFrom<=s.dTo?s.dFrom:s.dTo));s.wTo=weekKeyOf(parseISO(s.dFrom<=s.dTo?s.dTo:s.dFrom))}
+    s.mode=m;draw(false)},
+  'cmd-add-b':()=>{UI.cmd.B.on=true;draw(false)},
+  'cmd-rm-b':()=>{UI.cmd.B.on=false;draw(false)},
+  'export-pdf':el=>{el.disabled=true;exportPDF().finally(()=>{el.disabled=false})},
+  'dec-add':()=>{if(needRole('admin'))openModal('Log a decision',decisionForm())},
+  'head-review':el=>{if(!needRole('admin'))return;const u=DB.units.find(x=>x.id===el.dataset.unit);openModal('Divisional Head review · '+(u?u.name:''),headReviewForm(el.dataset.unit,el.dataset.head))},
+  'dec-toggle':el=>{if(!needRole('admin'))return;const d=DB.decisions.find(x=>x.id===el.dataset.id);if(d){d.status=d.status==='Done'?'Open':'Done';persist();draw(false)}},
+  'dec-del':el=>{if(!needRole('admin'))return;const d=DB.decisions.find(x=>x.id===el.dataset.id);if(!d)return;confirmBox('Delete this decision?','"'+d.title+'" will be removed from the log.','Delete',()=>{DB.decisions=DB.decisions.filter(x=>x.id!==d.id);persist();draw(false)})},
+  'res-approve':el=>resolveReq(el.dataset.id,'Approved'),
+  'res-decline':el=>resolveReq(el.dataset.id,'Declined'),
+  tab:el=>{UI.tab=el.dataset.t;draw(false)},
+  'unit-rename':el=>{if(!needRole('admin'))return;const u=DB.units.find(x=>x.id===el.dataset.id);openModal('Rename unit','<form class="form" data-form="unit-rename" data-id="'+u.id+'">'+fld('Unit name','name',{value:u.name,attrs:'maxlength="60"'})+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save name</button></div></form>')},
+  'unit-del':el=>{if(!needRole('admin'))return;const u=DB.units.find(x=>x.id===el.dataset.id);const n=DB.users.filter(x=>x.active&&x.unitId===u.id).length;
+    if(n){toast('Move or remove the '+n+' '+(n===1?'person':'people')+' in '+u.name+' first.','bad');return}
+    confirmBox('Remove this unit?',u.name+' will be removed from the organisation chart. Past records stay in reports.','Remove unit',()=>{u.active=false;persist();toast('Unit removed');draw(false)})},
+  'person-add':()=>{if(!needRole('admin'))return;if(!activeUnits().length){toast('Add a unit first.','bad');return}openModal('Add person',personForm(null))},
+  'person-edit':el=>{if(!needRole('admin'))return;openModal('Edit person',personForm(DB.users.find(x=>x.id===el.dataset.id)))},
+  'person-pw':el=>{if(!needRole('admin'))return;const u=DB.users.find(x=>x.id===el.dataset.id);openModal('Reset password · '+u.name,pwForm('person-pw',u.id))},
+  'person-del':el=>{if(!needRole('admin'))return;const u=DB.users.find(x=>x.id===el.dataset.id);
+    if(u.id===ME.id){toast('You cannot remove your own account.','bad');return}
+    if(u.role==='admin'&&DB.users.filter(x=>x.active&&x.role==='admin').length<2){toast('Keep at least one executive account.','bad');return}
+    confirmBox('Remove '+u.name+'?','They will no longer be able to sign in. Their past records stay in reports.','Remove',()=>{u.active=false;persist();toast('Person removed');draw(false)})},
+  'reset-demo':()=>{if(!needRole('admin'))return;confirmBox('Reset to demo data?','All units, people, plans and reports will be replaced with the sample data.','Reset',async()=>{DB=await buildSeed();persist();const same=DB.users.find(u=>u.username===ME.username&&u.role==='admin');if(!same){signOut('Data reset. Sign in again.');return}ME=same;UI.cmd=null;toast('Demo data restored','ok');draw(false)},false)}
+};
+function resolveReq(id,status){
+  if(!needRole('admin'))return;
+  const q=DB.requests.find(x=>x.id===id);if(!q)return;
+  openModal((status==='Approved'?'Approve':'Decline')+' request','<form class="form" data-form="res-decide" data-id="'+id+'" data-status="'+status+'"><p><b>'+esc(q.item)+'</b><br><span class="muted">'+esc(unitName(q.unitId))+'</span></p>'+area('Note to the team head','note','',{rows:2,req:false,max:300})+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn '+(status==='Declined'?'danger':'')+'" type="submit">'+(status==='Approved'?'Approve request':'Decline request')+'</button></div></form>');
+}
+
+const F={ /* form submit handlers (async allowed) */
+  login:async f=>{
+    const err=$('#lg-err'),btn=f.querySelector('button[type=submit]');err.textContent='';btn.disabled=true;
+    const r=await tryLogin(f.elements.username.value,f.elements.password.value);btn.disabled=false;
+    if(r.err){err.textContent=r.err;return}
+    signIn(r.user);
+  },
+  plan:f=>{
+    if(!ME||ME.role!=='staff')return;
+    const d=new FormData(f),id=f.dataset.id;
+    const rec={activity:d.get('activity').trim(),objective:d.get('objective').trim(),priority:d.get('priority'),target:d.get('target').trim(),deadline:d.get('deadline'),resources:d.get('resources').trim(),kpi:d.get('kpi').trim()};
+    if(!rec.activity||!rec.objective||!rec.target||!rec.kpi||!rec.deadline)return formErr(f,'Fill in every required field.');
+    if(!PRI[rec.priority])return formErr(f,'Choose a priority.');
+    if(rec.deadline<iso(weekStart(UI.week)))return formErr(f,'The deadline cannot be before the start of the week.');
+    if(id){const p=DB.plans.find(x=>x.id===id);if(!p||p.userId!==ME.id||DB.assessments.some(a=>a.planId===id))return formErr(f,'This item can no longer be edited.');Object.assign(p,rec)}
+    else{if(UI.week<curWeek())return formErr(f,'Past weeks cannot be planned.');DB.plans.push(Object.assign({id:uid('p'),userId:ME.id,unitId:ME.unitId,weekKey:UI.week,createdAt:iso(new Date())},rec))}
+    persist();closeModal();toast('Plan item saved','ok');draw(false);
+  },
+  assess:f=>{
+    if(!ME||ME.role!=='staff')return;
+    const p=DB.plans.find(x=>x.id===f.dataset.plan);if(!p||p.userId!==ME.id)return;
+    const d=new FormData(f),ach=Number(d.get('ach')),rating=Number(d.get('rating')),cause=d.get('cause')||'None';
+    if(!Number.isFinite(ach)||ach<0||ach>100||d.get('ach')==='')return formErr(f,'Enter a percentage from 0 to 100.');
+    if(!(rating>=1&&rating<=5))return formErr(f,'Choose a quality rating from 1 to 5.');
+    if(ach<80&&cause==='None')return formErr(f,'Choose the main cause of the gap.');
+    const rec={ach:Math.round(ach),rating,cause:ach>=100?'None':cause,note:String(d.get('note')||'').trim(),
+      timeliness:d.get('timeliness')==='Delayed'?'Delayed':'OnTime',
+      status:['Completed','Partial','NotDone'].includes(d.get('status'))?d.get('status'):'Completed',
+      impact:String(d.get('impact')||'').trim(),corrective:String(d.get('corrective')||'').trim(),
+      corrDeadline:d.get('corrDeadline')||'',responsible:String(d.get('responsible')||'').trim(),at:iso(new Date())};
+    const a=DB.assessments.find(x=>x.planId===p.id);
+    if(a)Object.assign(a,rec);else DB.assessments.push(Object.assign({id:uid('a'),planId:p.id,userId:ME.id,unitId:p.unitId,weekKey:p.weekKey,pri:p.priority,headNote:''},rec));
+    persist();toast('Assessment saved','ok');draw(false);
+  },
+  behavior:f=>{
+    if(!ME||ME.role!=='staff')return;
+    const wk=f.dataset.week,d=new FormData(f),scores={};
+    for(const dim of BEHAVIOR_DIMS){const v=Number(d.get('dim_'+dim[0]));if(!(v>=1&&v<=5))return formErr(f,'Rate every dimension from 1 to 5.');scores[dim[0]]=v}
+    const rec={scores,note:String(d.get('note')||'').trim(),at:iso(new Date())};
+    DB.behaviors=DB.behaviors||[];
+    const b=DB.behaviors.find(x=>x.userId===ME.id&&x.weekKey===wk);
+    if(b)Object.assign(b,rec);else DB.behaviors.push(Object.assign({id:uid('bv'),userId:ME.id,unitId:ME.unitId,weekKey:wk},rec));
+    persist();toast('Behavioural assessment saved','ok');draw(false);
+  },
+  headnote:f=>{
+    if(!ME||ME.role!=='head')return;
+    const a=DB.assessments.find(x=>x.id===f.dataset.id);if(!a||a.unitId!==ME.unitId)return;
+    a.headNote=String(new FormData(f).get('headNote')||'').trim();persist();toast('Feedback saved','ok');
+  },
+  request:f=>{
+    if(!ME||ME.role!=='head')return;
+    const d=new FormData(f),item=d.get('item').trim(),detail=d.get('detail').trim();
+    if(!item||!detail)return formErr(f,'Fill in both fields.');
+    DB.requests.push({id:uid('q'),unitId:ME.unitId,requestedBy:ME.id,weekKey:curWeek(),item,detail,status:'Pending',decisionNote:'',at:iso(new Date())});
+    persist();closeModal();toast('Request sent to management','ok');draw(false);
+  },
+  report:f=>{
+    if(!ME||ME.role!=='head')return;
+    const d=new FormData(f),wk=UI.week,get=k=>String(d.get(k)||'').trim();
+    const V=scoped(),m=computeMetrics(V,{type:'unit',id:ME.unitId},{weeks:[wk]});
+    const rec={
+      achievements:get('achievements'),successes:get('successes'),positiveFeedback:get('positiveFeedback'),goodPractices:get('goodPractices'),
+      missedTargets:get('missedTargets'),delays:get('delays'),qualityProblems:get('qualityProblems'),coordinationProblems:get('coordinationProblems'),resourceConstraints:get('resourceConstraints'),
+      improvements:get('improvements'),nextWeek:get('nextWeek'),
+      rating:Number(d.get('rating')),avg:m.perf==null?0:m.perf,at:iso(new Date()),headId:ME.id};
+    if(!rec.achievements&&!rec.successes&&!rec.missedTargets&&!rec.delays)return formErr(f,'Record at least what went well and what did not go well this week.');
+    const cur=DB.reports.find(r=>r.unitId===ME.unitId&&r.weekKey===wk);
+    if(cur)Object.assign(cur,rec);else DB.reports.push(Object.assign({id:uid('r'),unitId:ME.unitId,weekKey:wk},rec));
+    persist();toast('Report sent to management','ok');draw(false);
+  },
+  headreview:f=>{
+    if(!needRole('admin'))return;
+    const d=new FormData(f),unitId=f.dataset.unit,headId=f.dataset.head,wk=UI.week;
+    if(!DB.units.find(u=>u.id===unitId&&u.active)||!DB.users.find(u=>u.id===headId&&u.active&&u.role==='head'))return;
+    const areas={};let wsum=0,wtot=0;
+    for(const ar of HEAD_AREAS){
+      const v=Number(d.get('area_'+ar[0]));
+      if(!(v>=1&&v<=5))return formErr(f,'Score every performance area from 1 to 5.');
+      areas[ar[0]]=v;wsum+=v*ar[2];wtot+=5*ar[2];
+    }
+    const review={};
+    for(const q of HEAD_REVIEW_Q){
+      const v=d.get('q_'+q[0]);
+      review[q[0]]=['Yes','Partly','No'].includes(v)?v:'No';
+    }
+    const rec={unitId,headId,weekKey:wk,areas,weighted:wtot?Math.round(wsum/wtot*100):null,review,remarks:String(d.get('remarks')||'').trim(),at:iso(new Date()),by:ME.id};
+    DB.headReviews=DB.headReviews||[];
+    const cur=DB.headReviews.find(x=>x.unitId===unitId&&x.headId===headId&&x.weekKey===wk);
+    if(cur)Object.assign(cur,rec);else DB.headReviews.push(Object.assign({id:uid('hr')},rec));
+    persist();closeModal();toast('Head review saved','ok');draw(false);
+  },
+  decision:f=>{
+    if(!needRole('admin'))return;
+    const d=new FormData(f),title=d.get('title').trim();if(!title)return formErr(f,'Enter the decision.');
+    DB.decisions.push({id:uid('d'),date:iso(new Date()),title,detail:String(d.get('detail')||'').trim(),unitId:d.get('unitId')||'',status:d.get('status')==='Done'?'Done':'Open',by:ME.id});
+    persist();closeModal();toast('Decision logged','ok');draw(false);
+  },
+  'res-decide':f=>{
+    if(!needRole('admin'))return;
+    const q=DB.requests.find(x=>x.id===f.dataset.id);if(!q)return;
+    q.status=f.dataset.status==='Approved'?'Approved':'Declined';q.decisionNote=String(new FormData(f).get('note')||'').trim();
+    persist();closeModal();toast('Request '+q.status.toLowerCase(),'ok');draw(false);
+  },
+  'unit-add':f=>{
+    if(!needRole('admin'))return;
+    const name=new FormData(f).get('name').trim();
+    if(!name)return formErr(f.parentElement,'Enter a unit name.');
+    if(activeUnits().some(u=>u.name.toLowerCase()===name.toLowerCase()))return formErr(f.parentElement,'A unit with that name already exists.');
+    DB.units.push({id:uid('u'),name,active:true});persist();toast('Unit added','ok');draw(false);
+  },
+  'unit-rename':f=>{
+    if(!needRole('admin'))return;
+    const u=DB.units.find(x=>x.id===f.dataset.id),name=new FormData(f).get('name').trim();
+    if(!name)return formErr(f,'Enter a unit name.');
+    if(activeUnits().some(x=>x.id!==u.id&&x.name.toLowerCase()===name.toLowerCase()))return formErr(f,'A unit with that name already exists.');
+    u.name=name;persist();closeModal();toast('Unit renamed','ok');draw(false);
+  },
+  person:async f=>{
+    if(!needRole('admin'))return;
+    const d=new FormData(f),id=f.dataset.id;
+    const rec={name:d.get('name').trim(),username:d.get('username').trim().toLowerCase(),title:String(d.get('title')||'').trim(),role:d.get('role'),unitId:d.get('unitId')||null};
+    if(!rec.name)return formErr(f,'Enter the full name.');
+    if(!/^[a-z0-9._-]{3,30}$/.test(rec.username))return formErr(f,'Username must be 3 to 30 letters, numbers, dots or dashes.');
+    if(DB.users.some(u=>u.id!==id&&u.username===rec.username))return formErr(f,'That username is already taken.');
+    if(rec.role==='admin')rec.unitId=null;
+    else if(!rec.unitId||!DB.units.find(u=>u.id===rec.unitId&&u.active))return formErr(f,'Choose a unit for this role.');
+    if(id){
+      const u=DB.users.find(x=>x.id===id);
+      if(u.role==='admin'&&rec.role!=='admin'&&DB.users.filter(x=>x.active&&x.role==='admin').length<2)return formErr(f,'Keep at least one executive account.');
+      Object.assign(u,rec);if(u.id===ME.id)ME=u;
+    }else{
+      const pw=String(d.get('password')||'');if(pw.length<8)return formErr(f,'The password needs at least 8 characters.');
+      const salt=uid('s');
+      DB.users.push(Object.assign({id:uid('u'),salt,pw:await hashPw(pw,salt),active:true},rec));
+    }
+    persist();closeModal();toast(id?'Changes saved':'Person added','ok');draw(false);
+  },
+  'person-pw':async f=>{
+    if(!needRole('admin'))return;
+    const u=DB.users.find(x=>x.id===f.dataset.id),pw=String(new FormData(f).get('password')||'');
+    if(pw.length<8)return formErr(f,'The password needs at least 8 characters.');
+    u.salt=uid('s');u.pw=await hashPw(pw,u.salt);persist();closeModal();toast('Password reset','ok');
+  },
+  'account-pw':async f=>{
+    const d=new FormData(f),cur=String(d.get('current')||''),pw=String(d.get('password')||''),again=String(d.get('again')||'');
+    if(await hashPw(cur,ME.salt)!==ME.pw)return formErr(f,'The current password is not correct.');
+    if(pw.length<8)return formErr(f,'The new password needs at least 8 characters.');
+    if(pw!==again)return formErr(f,'The two new passwords do not match.');
+    ME.salt=uid('s');ME.pw=await hashPw(pw,ME.salt);persist();closeModal();toast('Password changed','ok');
+  }
+};
+const CHG={
+  'review-user':el=>{if(ME.role!=='head')return;UI.reviewUser=el.value;draw(false)},
+  cmd:el=>{if(!needRole('admin'))return;UI.cmd[el.dataset.side][el.dataset.field]=el.value;draw(false)},
+  'people-filter':el=>{UI[el.dataset.f]=el.value;draw(false)}
+};
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.menu-wrap'))$$('.menu-wrap.open').forEach(x=>x.classList.remove('open'));
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const fn=ACT[el.dataset.act];if(fn){e.preventDefault();fn(el)}
+});
+document.addEventListener('change',e=>{const el=e.target.closest('[data-change]');if(el&&CHG[el.dataset.change])CHG[el.dataset.change](el)});
+document.addEventListener('input',e=>{
+  const el=e.target.closest('[data-live]');if(!el)return;
+  UI.q=el.value;const pos=el.selectionStart;draw(false);
+  const n=$('#pq');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}
+});
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('[data-form]');if(!f)return;
+  e.preventDefault();
+  const fn=F[f.dataset.form];if(!fn)return;
+  const er=f.querySelector('.form-err');if(er)er.textContent='';
+  Promise.resolve(fn(f)).catch(err=>{console.error(err);toast('Something went wrong. Try again.','bad')});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeModal()});
+let rz=null;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(paintCharts,120)});
+
+/* ----- start ----- */
+function bootFromLocal(){
+  const raw=lsGet(KEY);
+  if(raw){try{DB=JSON.parse(raw)}catch(e){DB=null}}
+}
+function resumeSession(){
+  const sid=ssGet(SKEY);
+  if(sid){const u=DB.users.find(x=>x.id===sid&&x.active);if(u){ME=u;UI.route=HOME[u.role];UI.week=curWeek();resetIdle()}}
+}
+(async function init(){
+  try{
+    const cloudUp=await initCloud();
+    if(cloudUp){
+      bootFromLocal(); // show the last-known copy instantly while the cloud snapshot loads
+      if(DB&&DB.users&&DB.v===1){resumeSession();draw(true)}
+      watchCloud(async remote=>{
+        if(remote&&remote.users&&remote.v===1){
+          DB=remote;lsSet(KEY,JSON.stringify(DB));
+        }else if(!DB||!DB.users||DB.v!==1){
+          DB=await buildSeed();pushCloud();
+        }
+        resumeSession();draw(true);
+      });
+    }else{
+      bootFromLocal();
+      if(!DB||!DB.users||DB.v!==1){DB=await buildSeed();persist()}
+      resumeSession();
+      draw(true);
+    }
+  }catch(e){console.error(e);setSync('err','Could not start cloud sync — running locally');if(!DB||!DB.users||DB.v!==1){DB=await buildSeed()}resumeSession();draw(true)}
+})();
+</script>
+</body>
+</html>
