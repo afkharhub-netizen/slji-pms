@@ -891,12 +891,10 @@ VIEWS.plan=()=>{
   const V=scoped(),wk=UI.week,cw=curWeek(),editable=wk>=cw;
   const list=V.plans.filter(p=>p.weekKey===wk).sort(byPri);
   const add=editable?'<button class="btn" data-act="plan-add">'+icon('plus',18)+'Add plan item</button>':'';
-  let out=pageHead('Weekly plan','B. Your activities, targets and deadlines for the week. Only you can edit this plan.',add,privacyNote('Visible to you, your team head and the executive team.'))+lockNotice()+weekbar()+
+  let out=pageHead('Weekly plan','Your activities, targets and deadlines for the week.',add,privacyNote('Visible to you, your team head and the executive team.'))+lockNotice()+weekbar()+
   (list.length?'<div class="plans">'+list.map(p=>planCard(p,V.assessments.find(a=>a.planId===p.id),editable)).join('')+'</div>':
    emptyBox(editable?'No plan for '+weekLabel(wk)+' yet':'Nothing was planned for '+weekLabel(wk),editable?'Add your first item. Set a priority, a target and a deadline.':'Past weeks can no longer be planned.',editable?'<div><button class="btn" data-act="plan-add">Add plan item</button></div>':''))+
   (editable&&list.length?'<p class="muted" style="margin-top:14px">Items that already have an assessment are locked.</p>':'');
-  out+='<section style="margin-top:26px"><div class="card-h"><h2>C. Actual performance assessment</h2><p>This part is completed together with you and your team head — either of you can fill it in from your own page.</p></div>'+
-    assessSection(list,V,wk)+'</section>'+behaviorSection(V,wk);
   return out;
 };
 function planForm(p){
@@ -947,10 +945,10 @@ const BEHAVIOR_DIMS=[
   ['adaptability','Adaptability'],['service','Service orientation'],['documentation','Documentation & reporting'],
   ['ethics','Ethical conduct & integrity'],['learning','Learning & self-development'],['contribution','Contribution to organizational objectives']
 ];
-function behaviorSection(V,wk){
-  const b=V.behaviors&&V.behaviors.find(x=>x.userId===ME.id&&x.weekKey===wk);
-  return '<section class="card form" style="margin-top:18px"><div class="card-h"><h2>Weekly behavioural &amp; competency assessment</h2>'+(b?'<span class="pill p-ok">Saved '+fmtD(parseISO(b.at))+'</span>':'<span class="pill p-warn">Not submitted</span>')+'</div><p class="muted" style="margin-bottom:12px">Rate yourself on each dimension for '+weekLabel(wk)+'. 1 is poor, 5 is excellent.</p>'+
-  '<form data-form="behavior" data-week="'+wk+'"><div class="stack" style="gap:10px">'+BEHAVIOR_DIMS.map(d=>'<div class="field" style="margin:0"><span class="lbl">'+d[1]+'</span><div class="rate" role="radiogroup" aria-label="'+esc(d[1])+' rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="dim_'+d[0]+'" value="'+n+'"'+(b&&b.scores[d[0]]===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
+function behaviorSection(V,wk,u){
+  const b=V.behaviors&&V.behaviors.find(x=>x.userId===u.id&&x.weekKey===wk);
+  return '<section class="card form" style="margin-top:18px"><div class="card-h"><h2>D. Weekly behavioural &amp; competency assessment</h2>'+(b?'<span class="pill p-ok">Saved '+fmtD(parseISO(b.at))+'</span>':'<span class="pill p-warn">Not submitted</span>')+'</div><p class="muted" style="margin-bottom:12px">Rate '+esc(u.name)+' on each dimension for '+weekLabel(wk)+'. 1 is poor, 5 is excellent.</p>'+
+  '<form data-form="behavior" data-week="'+wk+'" data-user="'+u.id+'"><div class="stack" style="gap:10px">'+BEHAVIOR_DIMS.map(d=>'<div class="field" style="margin:0"><span class="lbl">'+d[1]+'</span><div class="rate" role="radiogroup" aria-label="'+esc(d[1])+' rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="dim_'+d[0]+'" value="'+n+'"'+(b&&b.scores[d[0]]===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
   area('Comments','note',b&&b.note,{rows:2,req:false,max:400})+
   '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(b?'Update assessment':'Save assessment')+'</button></div></form></section>';
 }
@@ -1019,14 +1017,13 @@ VIEWS.review=()=>{
   const perf=wavg(asses);
   const cw=curWeek(),weeks=Array.from({length:8},(_,i)=>shiftWeek(cw,i-8));
   const vals=weeks.map(k=>wavg(V.assessments.filter(a=>a.userId===u.id&&a.weekKey===k)));
-  const bv=(V.behaviors||[]).find(x=>x.userId===u.id&&x.weekKey===wk);
-  return pageHead('Employee assessment','Choose an employee, then complete the Actual Performance Assessment together with them. Their Weekly Plan (Section B) can only be edited by the employee.','',privacyNote('You can only see employees in your own unit.'))+
+  return pageHead('Employee assessment','Choose an employee to review their weekly plan and complete their assessment. Their Weekly Plan (Section B) can only be edited by the employee.','',privacyNote('You can only see employees in your own unit.'))+
   lockNotice()+'<div class="tools"><div class="field"><label for="rv-u">Employee</label><select id="rv-u" data-change="review-user">'+staff.map(s=>'<option value="'+s.id+'"'+(s.id===u.id?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div></div>'+weekbar()+
   '<div class="stack"><div class="g3">'+kpi('Week score',fmtPct(perf),asses.length+' of '+plans.length+' items assessed')+kpi('Main cause of gaps',topCause(asses)||'None','This week')+kpi('Average rating',asses.length?mean(asses.map(a=>a.rating)).toFixed(1)+' / 5':'–','Quality of results')+'</div>'+
   '<section class="card"><div class="card-h"><h2>Last 8 weeks</h2></div>'+slot('rv-trend',W=>lineChart(W,[{name:u.name,color:C.A,vals}],weeks.map(k=>'W'+wkNum(k)),'Performance of '+u.name))+'</section>'+
   '<section><div class="card-h"><h2>B. Weekly plan (view only)</h2><p>Only '+esc(u.name)+' can edit this.</p></div>'+(plans.length?'<div class="plans">'+plans.map(p=>planCard(p,asses.find(a=>a.planId===p.id),false)).join('')+'</div>':emptyBox('No plan items','This employee has not submitted a plan for '+weekLabel(wk)+'.'))+'</section>'+
-  '<section style="margin-top:22px"><div class="card-h"><h2>C. Actual performance assessment</h2><p>Editable here by you, and by '+esc(u.name)+' from their own Weekly plan page.</p></div>'+assessSection(plans,V,wk,true)+'</section>'+
-  '<section style="margin-top:22px"><div class="card-h"><h2>D. Weekly behavioural &amp; competency assessment</h2></div>'+(bv?'<p class="muted">'+esc(u.name)+' submitted a self-assessment on '+fmtD(parseISO(bv.at))+'.'+(bv.note?' Comment: "'+esc(bv.note)+'"':'')+'</p>':'<p class="muted">'+esc(u.name)+' has not submitted a self-assessment for '+weekLabel(wk)+' yet.</p>')+'</section></div>';
+  '<section style="margin-top:22px"><div class="card-h"><h2>C. Actual performance assessment</h2><p>Review '+esc(u.name)+'\'s plan above, then record what was achieved together with them.</p></div>'+assessSection(plans,V,wk,true)+'</section>'+
+  behaviorSection(V,wk,u)+'</div>';
 };
 
 VIEWS.resources=()=>{
@@ -1485,14 +1482,15 @@ const F={ /* form submit handlers (async allowed) */
     persist();toast('Assessment saved','ok');draw(false);
   },
   behavior:f=>{
-    if(!ME||ME.role!=='staff')return;
+    if(!needRole('head'))return;
+    const u=DB.users.find(x=>x.id===f.dataset.user&&x.unitId===ME.unitId&&x.role==='staff'&&x.active);if(!u)return;
     if(DB.locks&&DB.locks.entryOpen===false){toast('The executive team has paused data entry right now.','bad');return}
     const wk=f.dataset.week,d=new FormData(f),scores={};
     for(const dim of BEHAVIOR_DIMS){const v=Number(d.get('dim_'+dim[0]));if(!(v>=1&&v<=5))return formErr(f,'Rate every dimension from 1 to 5.');scores[dim[0]]=v}
-    const rec={scores,note:String(d.get('note')||'').trim(),at:iso(new Date())};
+    const rec={scores,note:String(d.get('note')||'').trim(),at:iso(new Date()),by:ME.id};
     DB.behaviors=DB.behaviors||[];
-    const b=DB.behaviors.find(x=>x.userId===ME.id&&x.weekKey===wk);
-    if(b)Object.assign(b,rec);else DB.behaviors.push(Object.assign({id:uid('bv'),userId:ME.id,unitId:ME.unitId,weekKey:wk},rec));
+    const b=DB.behaviors.find(x=>x.userId===u.id&&x.weekKey===wk);
+    if(b)Object.assign(b,rec);else DB.behaviors.push(Object.assign({id:uid('bv'),userId:u.id,unitId:u.unitId,weekKey:wk},rec));
     persist();toast('Behavioural assessment saved','ok');draw(false);
   },
   headnote:f=>{
