@@ -757,7 +757,7 @@ const brand=()=>'<div class="brand">'+LOGO+'<div><b>SLJI</b><span>Performance Mo
 const NAV={
   staff:[['home','My week','home'],['plan','Weekly plan','plan'],['history','My history','chart']],
   head:[['unit','Unit overview','users'],['team','My team','user'],['review','Employee assessment','check'],['resources','Resources','box'],['report','Divisional Head assessment','doc']],
-  admin:[['command','Command center','grid'],['divisions','Divisions','building'],['divreport','Divisional report','doc'],['admin','Organisation','cog']]
+  admin:[['command','Command center','grid'],['divisions','Divisions','building'],['divreport','Divisional report','doc'],['oversight','Team & employee review','check'],['admin','Organisation','cog']]
 };
 const HOME={staff:'home',head:'unit',admin:'command'};
 const ROLE_LABEL={staff:'Employee',head:'Team Head',admin:'Executive'};
@@ -1065,6 +1065,40 @@ VIEWS.report=()=>{
   return pageHead('Divisional Head assessment','Your weekly self-assessment as Divisional Head — matches the Weekly_Plan_Divisional_Heads format. The executive team can also review and update this.','')+lockNotice()+weekbar()+
   headReviewForm(ME.unitId,ME.id,true);
 };
+function planAssessRead(p,a){
+  return '<article class="card plan"><div class="plan-top"><span class="pill '+priCls(p.priority)+'">'+PRI[p.priority]+'</span>'+(a?'<span class="pill '+bandCls(a.ach)+'">'+a.ach+'% achieved</span>':'<span class="pill p-warn">Not assessed</span>')+'</div>'+
+  '<h3>'+esc(p.activity)+'</h3><p class="muted">'+esc(p.objective)+'</p>'+
+  '<dl class="facts"><div><dt>Target</dt><dd>'+esc(p.target)+'</dd></div><div><dt>Deadline</dt><dd>'+fmtDY(parseISO(p.deadline))+'</dd></div><div><dt>Resources</dt><dd>'+esc(p.resources||'None listed')+'</dd></div><div><dt>KPI</dt><dd>'+esc(p.kpi)+'</dd></div></dl>'+
+  (a?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><h4 style="font-size:14px;margin:0 0 8px">Team head\'s assessment</h4><dl class="facts"><div><dt>Timeliness</dt><dd>'+(a.timeliness==='Delayed'?'Delayed':'Completed on time')+'</dd></div><div><dt>Status</dt><dd>'+esc(a.status)+'</dd></div><div><dt>Quality rating</dt><dd>'+a.rating+' / 5</dd></div>'+(a.cause&&a.cause!=='None'?'<div><dt>Main cause</dt><dd>'+esc(a.cause)+'</dd></div>':'')+'</dl>'+
+    (a.note?'<p class="muted" style="margin-top:8px"><b>Notes:</b> '+esc(a.note)+'</p>':'')+
+    (a.impact||a.corrective?'<p class="muted" style="margin-top:6px"><b>Impact:</b> '+esc(a.impact||'–')+' · <b>Corrective action:</b> '+esc(a.corrective||'–')+(a.corrDeadline?' · <b>Due</b> '+fmtDY(parseISO(a.corrDeadline)):'')+(a.responsible?' · <b>Responsible:</b> '+esc(a.responsible):'')+'</p>':'')+
+    (a.headNote?'<div class="note" style="margin-top:8px"><b>Team head feedback</b>'+esc(a.headNote)+'</div>':'')+
+    '<p class="muted" style="margin-top:8px;font-size:13px">Saved '+fmtD(parseISO(a.at))+'</p></div>':'<p class="muted" style="margin-top:10px">Not yet assessed by the team head.</p>')+
+  '</article>';
+}
+VIEWS.oversight=()=>{
+  const wk=UI.week;
+  const heads=DB.users.filter(u=>u.active&&u.role==='head').sort((a,b)=>a.name.localeCompare(b.name));
+  const staffList=DB.users.filter(u=>u.active&&u.role==='staff').sort((a,b)=>a.name.localeCompare(b.name));
+  if(heads.length&&(!UI.ovHead||!heads.find(h=>h.id===UI.ovHead)))UI.ovHead=heads[0].id;
+  if(staffList.length&&(!UI.ovEmp||!staffList.find(s=>s.id===UI.ovEmp)))UI.ovEmp=staffList[0].id;
+  const head=heads.find(h=>h.id===UI.ovHead);
+  const emp=staffList.find(s=>s.id===UI.ovEmp);
+  const hr=head?(DB.headReviews||[]).find(x=>x.unitId===head.unitId&&x.headId===head.id&&x.weekKey===wk):null;
+  const empPlans=emp?DB.plans.filter(p=>p.userId===emp.id&&p.weekKey===wk).sort(byPri):[];
+  const empAsses=emp?DB.assessments.filter(a=>a.userId===emp.id&&a.weekKey===wk):[];
+  return pageHead('Team & employee review','Choose a team head or an employee to view their records. Everything here is read-only.','')+weekbar()+
+  '<div class="stack">'+
+    '<section class="card"><div class="card-h"><h2>Divisional Head assessment</h2></div>'+
+    (heads.length?'<div class="tools"><div class="field"><label for="ov-h">Team head</label><select id="ov-h" data-change="ov-head">'+heads.map(h=>'<option value="'+h.id+'"'+(h.id===UI.ovHead?' selected':'')+'>'+esc(h.name)+' · '+esc(unitName(h.unitId))+'</option>').join('')+'</select></div></div>'+
+    (hr?headReviewBody(hr):emptyBox('No review yet for '+weekLabel(wk),esc(head.name)+'\'s Divisional Head assessment has not been completed for '+weekLabel(wk)+'.')):
+    emptyBox('No team heads yet','Add a team head in Organisation first.'))+'</section>'+
+    '<section class="card"><div class="card-h"><h2>Employee weekly plan &amp; assessment</h2><p>The employee\'s plan (Section B) compared with the assessment their team head recorded (Section C).</p></div>'+
+    (staffList.length?'<div class="tools"><div class="field"><label for="ov-e">Employee</label><select id="ov-e" data-change="ov-emp">'+staffList.map(s=>'<option value="'+s.id+'"'+(s.id===UI.ovEmp?' selected':'')+'>'+esc(s.name)+' · '+esc(unitName(s.unitId))+'</option>').join('')+'</select></div></div>'+
+    (empPlans.length?'<div class="plans">'+empPlans.map(p=>planAssessRead(p,empAsses.find(a=>a.planId===p.id))).join('')+'</div>':emptyBox('No plan for '+weekLabel(wk),esc(emp.name)+' has not submitted a plan for '+weekLabel(wk)+'.')):
+    emptyBox('No employees yet','Add employees to a unit in Organisation first.'))+'</section>'+
+  '</div>';
+};
 function reportBody(r){
   const list=v=>{const items=String(v||'').split('\n').map(s=>s.trim()).filter(Boolean);return items.length?'<ul style="margin:6px 0 0 18px;padding:0">'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':''};
   const sec=(t,v)=>v?'<p style="margin-top:8px"><b>'+t+'</b></p>'+list(v):'';
@@ -1180,13 +1214,13 @@ VIEWS.command=()=>{
   const issues=A.m.asses.filter(a=>a.cause!=='None').sort((a,b)=>b.weekKey.localeCompare(a.weekKey)||a.ach-b.ach).slice(0,5);
   const bott='<section class="card"><div class="card-h"><h2>Bottlenecks</h2><p>'+(tot?'Most issues come from <b>'+topC+'</b> ('+Math.round(A.m.causes[topC]/tot*100)+'% of those logged for Subject A).':'No issues were logged for Subject A in this period.')+'</p></div>'+
     CAUSES.map(c=>'<div class="divrow"><div class="top2"><span>'+c+'</span><span>'+R.map((r,i)=>M.cmp?'<span style="color:'+r.color+'">'+r.m.causes[c]+'</span>':r.m.causes[c]).join(' · ')+'</span></div>'+R.map((r,i)=>{const t=sum(CAUSES.map(x=>r.m.causes[x]));return bar(t?r.m.causes[c]/t*100:0,M.cmp?r.color:'#D9651B').replace('class="bar"','class="bar'+(i>0?' thin':'')+'"')}).join('')+'</div>').join('')+
-    (byUnit.length?'<h3 style="font-size:16px;margin:18px 0 10px">By unit (Subject A)</h3><div class="tbl-wrap cmp-tbl"><table class="tbl" style="min-width:420px"><thead><tr><th>Unit</th>'+CAUSES.map(c=>'<th class="n">'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+byUnit.map(x=>'<tr><td data-label="Unit">'+esc(x.u.name)+'</td>'+x.c.map((n,i)=>'<td class="n" data-label="'+esc(CAUSES[i])+'">'+n+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'')+
+    (byUnit.length?'<h3 style="font-size:16px;margin:18px 0 10px">By unit (Subject A)</h3><div class="tbl-wrap cmp-tbl"><table class="tbl"><thead><tr><th>Unit</th>'+CAUSES.map(c=>'<th class="n">'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+byUnit.map(x=>'<tr><td data-label="Unit">'+esc(x.u.name)+'</td>'+x.c.map((n,i)=>'<td class="n" data-label="'+esc(CAUSES[i])+'">'+n+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'')+
     (issues.length?'<h3 style="font-size:16px;margin:18px 0 10px">Recent issue notes</h3>'+issues.map(a=>'<div class="issue"><div class="l"><span class="pill p-orange">'+a.cause+'</span><b>'+esc(userName(a.userId))+'</b><span class="muted">'+esc(unitName(a.unitId))+' · '+weekLabel(a.weekKey)+'</span></div><span>'+esc(a.note||'No note')+'</span></div>').join(''):'')+'</section>';
   const rankList=(list,all,low)=>list.length?list.map(x=>'<div class="rank'+(low?' low':'')+'"><span class="pos">'+(all.indexOf(x)+1)+'</span><div><b>'+esc(x.user.name)+'</b><small>'+esc(unitName(x.user.unitId))+' · '+x.n+' items</small></div><span class="pct">'+Math.round(x.perf)+'%</span></div>').join(''):'<p class="muted">No scored staff in this period.</p>';
   const rankBlock=r=>{const top=r.ranks.slice(0,5),low=r.ranks.slice(-5).filter(x=>!top.includes(x)).reverse();
     return '<section class="card"><div class="card-h"><h2>Rankings'+(M.cmp?' · <span style="color:'+r.color+'">Subject '+r.k+'</span>':'')+'</h2><p>'+(r.unitId?esc(unitName(r.unitId))+' staff':'All staff')+' · '+esc(r.plabel)+'</p></div><div class="g2"><div><h3 style="font-size:16px;margin-bottom:6px">Top performers</h3>'+rankList(top,r.ranks,false)+'</div><div><h3 style="font-size:16px;margin-bottom:6px">Needs support</h3>'+rankList(low,r.ranks,true)+'</div></div></section>'};
   const decisions='<section class="card"><div class="card-h"><h2>Key decisions log</h2><button class="btn sm" data-act="dec-add">'+icon('plus',16)+'Log decision</button></div>'+(M.decisions.length?M.decisions.map(d=>'<div class="decision"><div><h3>'+esc(d.title)+'</h3>'+(d.detail?'<p class="muted">'+esc(d.detail)+'</p>':'')+'<div class="meta"><span>'+fmtDY(parseISO(d.date))+'</span>'+(d.unitId?'<span class="pill p-blue">'+esc(unitName(d.unitId))+'</span>':'')+(d.respPerson?'<span class="pill p-mute">'+esc(d.respPerson)+'</span>':'')+(d.dueDate?'<span class="pill p-orange">Due '+fmtDY(parseISO(d.dueDate))+'</span>':'')+(d.followUp?'<span class="pill p-mute">Follow-up '+fmtDY(parseISO(d.followUp))+'</span>':'')+'<span class="pill '+(d.status==='Done'?'p-ok':'p-warn')+'">'+d.status+'</span></div></div><div class="head-actions" style="align-content:start"><button class="btn sec sm" data-act="dec-toggle" data-id="'+d.id+'">'+(d.status==='Done'?'Reopen':'Mark done')+'</button><button class="icon-btn" style="width:38px;height:38px" data-act="dec-del" data-id="'+d.id+'" aria-label="Delete decision">'+icon('trash',16)+'</button></div></div>').join(''):emptyBox('No decisions logged','Record decisions so the team can follow them up.'))+'</section>';
-  const reps='<section class="card"><div class="card-h"><h2>Divisional reports from team heads</h2><p>Reports for the weeks in Subject A\'s period.</p></div>'+(M.reports.length?M.reports.slice(0,8).map(r=>accItem(esc(unitName(r.unitId))+' · '+weekLabel(r.weekKey),'By '+userName(r.headId)+' · Rating '+r.rating+' / 5 · Score '+fmtPct(r.avg),reportBody(r))).join(''):'<p class="muted">No reports were submitted for this period.</p>')+'</section>';
+  const reps='<section class="card"><div class="card-h"><h2>Divisional reports from team heads</h2><p>Reports for the weeks in Subject A\'s period.</p></div>'+(M.reports.length?M.reports.slice(0,8).map(r=>'<div class="stack" style="gap:6px">'+accItem(esc(unitName(r.unitId))+' · '+weekLabel(r.weekKey),'By '+userName(r.headId)+' · Rating '+r.rating+' / 5 · Score '+fmtPct(r.avg),reportBody(r))+'<div style="text-align:right"><button class="btn danger sm" data-act="rep-del" data-id="'+r.id+'">'+icon('trash',14)+'Clear report</button></div></div>').join(''):'<p class="muted">No reports were submitted for this period.</p>')+'</section>';
   return pageHead('Executive command center','Decision-making view for the Ameer, CEO and General Secretary.','<button class="btn accent" data-act="export-pdf">'+icon('download',18)+'Export PDF</button>')+
   '<div class="stack"><section class="card filters'+(UI.cmd.open?' open':'')+'"><button class="filters-toggle" data-act="cmd-toggle" aria-expanded="'+(UI.cmd.open?'true':'false')+'"><h2>Filters and comparison</h2><span class="chev">'+icon('down')+'</span></button>'+
   '<div class="collapse"><div class="in"><div class="fgrid">'+sidePanel(A)+(B?sidePanel(B):'<div class="fadd"><b style="color:var(--navy)">Compare with something else</b><span>Add a second employee, unit or period to see them side by side.</span><button class="btn sec" data-act="cmd-add-b">'+icon('plus',18)+'Add comparison</button></div>')+'</div><p class="muted" style="font-size:14px;margin-top:12px">Weeks that overlap a custom date range are included in full.</p></div></div></section>'+
@@ -1216,7 +1250,7 @@ VIEWS.divisions=()=>{
   const st={Pending:'p-warn',Approved:'p-ok',Declined:'p-bad'};
   const reqs=DB.requests.slice().sort((a,b)=>(a.status==='Pending'?0:1)-(b.status==='Pending'?0:1)||b.at.localeCompare(a.at));
   return pageHead('Divisions','Reports and resource requests from every unit.')+weekbar()+
-  '<div class="stack"><div class="g3">'+cards+'</div><section class="card"><div class="card-h"><h2>Resource requests</h2></div>'+(reqs.length?reqs.slice(0,12).map(q=>'<div class="decision"><div><h3>'+esc(q.item)+'</h3><p class="muted">'+esc(q.detail)+'</p><div class="meta"><span class="pill p-blue">'+esc(unitName(q.unitId))+'</span><span>'+fmtDY(parseISO(q.at))+'</span><span class="pill '+st[q.status]+'">'+q.status+'</span></div>'+(q.decisionNote?'<div class="note"><b>Response</b>'+esc(q.decisionNote)+'</div>':'')+'</div>'+(q.status==='Pending'?'<div class="head-actions" style="align-content:start"><button class="btn sm" data-act="res-approve" data-id="'+q.id+'">Approve</button><button class="btn danger sm" data-act="res-decline" data-id="'+q.id+'">Decline</button></div>':'')+'</div>').join(''):emptyBox('No requests','Team heads can send resource requests from their Resources page.'))+'</section></div>';
+  '<div class="stack"><div class="g3">'+cards+'</div><section class="card"><div class="card-h"><h2>Resource requests</h2></div>'+(reqs.length?reqs.slice(0,12).map(q=>'<div class="decision"><div><h3>'+esc(q.item)+'</h3><p class="muted">'+esc(q.detail)+'</p><div class="meta"><span class="pill p-blue">'+esc(unitName(q.unitId))+'</span><span>'+fmtDY(parseISO(q.at))+'</span><span class="pill '+st[q.status]+'">'+q.status+'</span></div>'+(q.decisionNote?'<div class="note"><b>Response</b>'+esc(q.decisionNote)+'</div>':'')+'</div><div class="head-actions" style="align-content:start">'+(q.status==='Pending'?'<button class="btn sm" data-act="res-approve" data-id="'+q.id+'">Approve</button><button class="btn danger sm" data-act="res-decline" data-id="'+q.id+'">Decline</button>':'')+'<button class="icon-btn" style="width:38px;height:38px" data-act="req-del" data-id="'+q.id+'" aria-label="Clear request">'+icon('trash',16)+'</button></div></div>').join(''):emptyBox('No requests','Team heads can send resource requests from their Resources page.'))+'</section></div>';
 };
 function headReviewBody(hr){
   const pct=w=>Math.round(w/5*100);
@@ -1441,6 +1475,8 @@ const ACT={ /* click actions */
   'dec-del':el=>{if(!needRole('admin'))return;const d=DB.decisions.find(x=>x.id===el.dataset.id);if(!d)return;confirmBox('Delete this decision?','"'+d.title+'" will be removed from the log.','Delete',()=>{DB.decisions=DB.decisions.filter(x=>x.id!==d.id);persist();draw(false)})},
   'res-approve':el=>resolveReq(el.dataset.id,'Approved'),
   'res-decline':el=>resolveReq(el.dataset.id,'Declined'),
+  'req-del':el=>{if(!needRole('admin'))return;const q=DB.requests.find(x=>x.id===el.dataset.id);if(!q)return;confirmBox('Clear this request?','"'+q.item+'" will be removed from the list.','Clear',()=>{DB.requests=DB.requests.filter(x=>x.id!==q.id);persist();toast('Request cleared');draw(false)})},
+  'rep-del':el=>{if(!needRole('admin'))return;const r=DB.reports.find(x=>x.id===el.dataset.id);if(!r)return;confirmBox('Clear this report?',unitName(r.unitId)+' · '+weekLabel(r.weekKey)+' will be removed.','Clear',()=>{DB.reports=DB.reports.filter(x=>x.id!==r.id);persist();toast('Report cleared');draw(false)})},
   tab:el=>{UI.tab=el.dataset.t;draw(false)},
   'unit-rename':el=>{if(!needRole('admin'))return;const u=DB.units.find(x=>x.id===el.dataset.id);openModal('Rename unit','<form class="form" data-form="unit-rename" data-id="'+u.id+'">'+fld('Unit name','name',{value:u.name,attrs:'maxlength="60"'})+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save name</button></div></form>')},
   'unit-del':el=>{if(!needRole('admin'))return;const u=DB.units.find(x=>x.id===el.dataset.id);const n=DB.users.filter(x=>x.active&&x.unitId===u.id).length;
@@ -1665,7 +1701,9 @@ const CHG={
     if(loose){UI.cmd[side].subj='p:'+loose.id;toast('Showing '+loose.name,'ok');draw(false);return}
     toast('No employee or unit matches that name. Pick from the list below it.','bad')},
   'people-filter':el=>{UI[el.dataset.f]=el.value;draw(false)},
-  'div-unit':el=>{if(!needRole('admin'))return;UI.divUnit=el.value;draw(false)}
+  'div-unit':el=>{if(!needRole('admin'))return;UI.divUnit=el.value;draw(false)},
+  'ov-head':el=>{if(!needRole('admin'))return;UI.ovHead=el.value;draw(false)},
+  'ov-emp':el=>{if(!needRole('admin'))return;UI.ovEmp=el.value;draw(false)}
 };
 
 document.addEventListener('click',e=>{
