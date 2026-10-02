@@ -756,8 +756,8 @@ const brand=()=>'<div class="brand">'+LOGO+'<div><b>SLJI</b><span>Performance Mo
 
 const NAV={
   staff:[['home','My week','home'],['plan','Weekly plan','plan'],['history','My history','chart']],
-  head:[['unit','Unit overview','users'],['team','My team','user'],['review','Employee assessment','check'],['resources','Resources','box'],['report','Divisional report','doc']],
-  admin:[['command','Command center','grid'],['divisions','Divisions','building'],['admin','Organisation','cog']]
+  head:[['unit','Unit overview','users'],['team','My team','user'],['review','Employee assessment','check'],['resources','Resources','box'],['report','Divisional Head assessment','doc']],
+  admin:[['command','Command center','grid'],['divisions','Divisions','building'],['divreport','Divisional report','doc'],['admin','Organisation','cog']]
 };
 const HOME={staff:'home',head:'unit',admin:'command'};
 const ROLE_LABEL={staff:'Employee',head:'Team Head',admin:'Executive'};
@@ -982,7 +982,7 @@ VIEWS.unit=()=>{
   });
   const pendingReq=V.requests.filter(q=>q.status==='Pending').length;
   const totalCause=sum(CAUSES.map(c=>m.causes[c]));
-  return pageHead(unitName(ME.unitId),'Unit overview for '+weekLabel(wk)+'.','<button class="btn sec" data-act="go" data-r="report">'+icon('doc',18)+'Divisional report</button>')+weekbar()+
+  return pageHead(unitName(ME.unitId),'Unit overview for '+weekLabel(wk)+'.','<button class="btn sec" data-act="go" data-r="report">'+icon('doc',18)+'Divisional Head assessment</button>')+weekbar()+
   '<div class="stack"><div class="g4">'+kpi('Unit performance',fmtPct(m.perf),m.assessed+' items assessed')+kpi('Plans submitted',submitted+' of '+staff.length,'Employees this week')+kpi('Issues logged',m.issues,'Management, resource, coordination')+kpi('Resource requests',pendingReq,'Waiting for approval',pendingReq?'orange':'')+'</div>'+
   '<div class="g2"><section class="card"><div class="card-h"><h2>Employees</h2></div>'+(rows.length?'<div class="list">'+rows.map(r=>'<div class="row"><span class="avatar" style="background:#E6EEF9">'+esc(ini(r.u.name))+'</span><div class="who"><b>'+esc(r.u.name)+'</b><small>'+r.p.length+' planned · '+r.a.length+' assessed'+(r.cause?' · '+r.cause:'')+'</small></div><div class="end"><button class="btn sec sm" data-act="open-review" data-id="'+r.u.id+'">Review</button></div><div class="meter"><div class="num"><span>'+(r.perf==null?'No score':bandOf(r.perf).label)+'</span><span>'+fmtPct(r.perf)+'</span></div>'+bar(r.perf)+'</div></div>').join('')+'</div>':emptyBox('No employees in this unit','Ask the executive team to add employees to your unit.'))+'</section>'+
   '<div class="stack"><section class="card"><div class="card-h"><h2>Gaps to follow up</h2></div>'+(gaps.length?gaps.map(g=>'<div class="issue"><div class="l"><span class="pill '+g.tone+'">'+(g.tone==='p-bad'?'Low score':'Follow up')+'</span><b>'+esc(g.t)+'</b></div><span class="muted">'+esc(g.d)+'</span></div>').join(''):'<p class="muted">No gaps found for this week.</p>')+'</section>'+
@@ -1034,25 +1034,36 @@ VIEWS.resources=()=>{
 };
 const reqForm=()=>'<form class="form" data-form="request">'+fld('What do you need?','item',{attrs:'maxlength="120"'})+area('Why it is needed','detail','',{rows:3,max:400})+'<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Send request</button></div></form>';
 
-VIEWS.report=()=>{
-  const V=scoped(),wk=UI.week,staff=unitStaff(V);
-  const m=computeMetrics(V,{type:'unit',id:ME.unitId},{weeks:[wk]});
-  const cur=V.reports.find(r=>r.unitId===ME.unitId&&r.weekKey===wk);
-  const submitted=staff.filter(u=>V.plans.some(p=>p.userId===u.id&&p.weekKey===wk)).length;
-  const past=V.reports.filter(r=>r.unitId===ME.unitId).sort((a,b)=>b.weekKey.localeCompare(a.weekKey)).slice(0,8);
+function divReportSection(unitId,wk){
+  const staff=DB.users.filter(u=>u.active&&u.role==='staff'&&u.unitId===unitId);
+  const m=computeMetrics(DB,{type:'unit',id:unitId},{weeks:[wk]});
+  const cur=DB.reports.find(r=>r.unitId===unitId&&r.weekKey===wk);
+  const submitted=staff.filter(u=>DB.plans.some(p=>p.userId===u.id&&p.weekKey===wk)).length;
+  const past=DB.reports.filter(r=>r.unitId===unitId).sort((a,b)=>b.weekKey.localeCompare(a.weekKey)).slice(0,8);
   const rows=(label,name)=>area(label,name,cur&&cur[name],{rows:2,req:false,max:400,ph:'One item per line'});
-  return pageHead('Divisional report','At the end of each week, answer to CEO/Management — matches the SLJI weekly monitoring format.','')+weekbar()+
-  '<div class="stack"><div class="g4">'+kpi('Unit performance',fmtPct(m.perf),'Calculated from employees')+kpi('Plans submitted',submitted+' of '+staff.length,'Employees')+kpi('Assessment coverage',fmtPct(m.rate),'Plans with results')+kpi('Issues logged',m.issues,'All causes')+'</div>'+
+  return '<div class="stack"><div class="g4">'+kpi('Unit performance',fmtPct(m.perf),'Calculated from employees')+kpi('Plans submitted',submitted+' of '+staff.length,'Employees')+kpi('Assessment coverage',fmtPct(m.rate),'Plans with results')+kpi('Issues logged',m.issues,'All causes')+'</div>'+
   '<section class="card"><div class="card-h"><h2>'+(cur?'Update report':'Write report')+' for '+weekLabel(wk)+'</h2>'+(cur?'<span class="pill p-ok">Submitted '+fmtD(parseISO(cur.at))+'</span>':'<span class="pill p-warn">Not submitted</span>')+'</div>'+
-  '<form class="form" data-form="report">'+
+  '<form class="form" data-form="report" data-unit="'+unitId+'">'+
   '<h3 style="font-size:16px;margin:4px 0 2px">A. What went well?</h3>'+rows('Major achievements','achievements')+rows('Important successes','successes')+rows('Positive feedback received','positiveFeedback')+rows('Good practices identified','goodPractices')+
   '<h3 style="font-size:16px;margin:10px 0 2px">B. What did not go well?</h3>'+rows('Missed targets','missedTargets')+rows('Delays','delays')+rows('Quality problems','qualityProblems')+rows('Coordination problems','coordinationProblems')+rows('Resource constraints','resourceConstraints')+
   '<h3 style="font-size:16px;margin:10px 0 2px">C. What needs to change?</h3>'+area('Improvement required — action — responsible — deadline','improvements',cur&&cur.improvements,{rows:3,req:false,max:500,ph:'One line per item, e.g. Improve X — do Y — Ahmed — Fri'})+
-  '<h3 style="font-size:16px;margin:10px 0 2px">D. Key decisions</h3><p class="muted" style="margin-bottom:6px">Logged separately by the executive team and visible on the Divisions page.</p>'+
+  '<h3 style="font-size:16px;margin:10px 0 2px">D. Key decisions</h3><p class="muted" style="margin-bottom:6px">Logged separately in the Key decisions log on the Command center.</p>'+
   '<h3 style="font-size:16px;margin:10px 0 2px">E. Next week\'s commitment</h3>'+area('Priority activities for next week','nextWeek',cur&&cur.nextWeek,{rows:3,req:false,max:500,ph:'One item per line'})+
   selBox('Overall unit rating','rating',[[5,'5 · Excellent'],[4,'4 · Good'],[3,'3 · Satisfactory'],[2,'2 · Needs support'],[1,'1 · Poor']],cur?cur.rating:clamp(Math.round((m.perf||60)/20),1,5))+
-  '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(cur?'Update and resend':'Submit to management')+'</button></div></form></section>'+
+  '<p class="form-err" role="alert"></p><div class="actions"><button class="btn" type="submit">'+(cur?'Update report':'Save report')+'</button></div></form></section>'+
   (past.length?'<section><div class="card-h"><h2>Previous reports</h2></div>'+past.map(r=>accItem(weekLabel(r.weekKey)+' · '+weekRange(r.weekKey),'Rating '+r.rating+' / 5',reportBody(r))).join('')+'</section>':'')+'</div>';
+}
+VIEWS.divreport=()=>{
+  const units=activeUnits();
+  if(!units.length)return pageHead('Divisional report','')+emptyBox('No units yet','Add a unit in Organisation first.');
+  if(!UI.divUnit||!units.find(u=>u.id===UI.divUnit))UI.divUnit=units[0].id;
+  return pageHead('Divisional report','At the end of each week, record the Divisional Head\'s report to CEO/Management — matches the SLJI weekly monitoring format.','')+lockNotice()+
+  '<div class="tools"><div class="field"><label for="dr-u">Unit</label><select id="dr-u" data-change="div-unit">'+units.map(u=>'<option value="'+u.id+'"'+(u.id===UI.divUnit?' selected':'')+'>'+esc(u.name)+'</option>').join('')+'</select></div></div>'+weekbar()+
+  divReportSection(UI.divUnit,UI.week);
+};
+VIEWS.report=()=>{
+  return pageHead('Divisional Head assessment','Your weekly self-assessment as Divisional Head — matches the Weekly_Plan_Divisional_Heads format. The executive team can also review and update this.','')+lockNotice()+weekbar()+
+  headReviewForm(ME.unitId,ME.id,true);
 };
 function reportBody(r){
   const list=v=>{const items=String(v||'').split('\n').map(s=>s.trim()).filter(Boolean);return items.length?'<ul style="margin:6px 0 0 18px;padding:0">'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':''};
@@ -1213,16 +1224,28 @@ function headReviewBody(hr){
   HEAD_AREAS.map(a=>'<div class="divrow"><div class="top2"><span>'+a[1]+' ('+a[2]+'%)</span><span>'+hr.areas[a[0]]+' / 5</span></div>'+bar(pct(hr.areas[a[0]]),'#1D4E9A')+'</div>').join('')+
   '<p class="muted" style="margin:14px 0 8px"><b>Weekly review</b></p><div class="tbl-wrap"><table class="tbl"><tbody>'+
   HEAD_REVIEW_Q.map(q=>'<tr><td>'+esc(q[1])+'</td><td class="n"><span class="pill '+(hr.review[q[0]]==='Yes'?'p-ok':hr.review[q[0]]==='Partly'?'p-warn':'p-bad')+'">'+hr.review[q[0]]+'</span></td></tr>').join('')+
-  '</tbody></table></div>'+(hr.remarks?'<p style="margin-top:10px"><b>Remarks.</b> '+esc(hr.remarks)+'</p>':'');
+  '</tbody></table></div>'+(hr.remarks?'<p style="margin-top:10px"><b>Remarks.</b> '+esc(hr.remarks)+'</p>':'')+
+  (hr.issues&&hr.issues.length?'<p class="muted" style="margin:14px 0 8px"><b>Non-achievement &amp; problem analysis</b></p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Activity</th><th>Reason</th><th>Responsibility</th><th>Impact</th><th>Corrective action</th><th>Deadline</th><th>Responsible</th></tr></thead><tbody>'+
+    hr.issues.map(it=>'<tr><td>'+esc(it.activity||'–')+'</td><td>'+esc(it.reason||'–')+'</td><td>'+esc(it.responsibility||'–')+'</td><td>'+esc(it.impact||'–')+'</td><td>'+esc(it.corrective||'–')+'</td><td>'+(it.deadline?fmtDY(parseISO(it.deadline)):'–')+'</td><td>'+esc(it.respPerson||'–')+'</td></tr>').join('')+
+    '</tbody></table></div>':'');
 }
-function headReviewForm(unitId,headId){
+function headReviewForm(unitId,headId,embedded){
   const hr=(DB.headReviews||[]).find(x=>x.unitId===unitId&&x.headId===headId&&x.weekKey===UI.week);
+  const issues=(hr&&hr.issues&&hr.issues.length?hr.issues:[0,1,2,3,4].map(()=>({})));
+  const issueRow=(it,i)=>'<div class="card" style="padding:12px;margin-bottom:10px"><p class="muted" style="margin-bottom:8px"><b>'+(i+1)+'.</b></p>'+
+    fld('Uncompleted activity','iss_'+i+'_activity',{value:it.activity,req:false,attrs:'maxlength="140"'})+
+    '<div class="row2">'+selBox('Reason category','iss_'+i+'_reason',[['','—']].concat(CAUSES.map(c=>[c,c+' ('+CAUSE_CODE[c]+')'])),it.reason||'',{req:false})+fld('Responsibility','iss_'+i+'_responsibility',{value:it.responsibility,req:false,attrs:'maxlength="100"'})+'</div>'+
+    fld('Impact','iss_'+i+'_impact',{value:it.impact,req:false,attrs:'maxlength="160"'})+
+    '<div class="row2">'+fld('Corrective action','iss_'+i+'_corrective',{value:it.corrective,req:false,attrs:'maxlength="160"'})+fld('Deadline','iss_'+i+'_deadline',{type:'date',value:it.deadline,req:false})+'</div>'+
+    fld('Responsible person','iss_'+i+'_respPerson',{value:it.respPerson,req:false,attrs:'maxlength="80"'})+'</div>';
   return '<form class="form" data-form="headreview" data-unit="'+unitId+'" data-head="'+headId+'">'+
   '<p class="muted" style="margin-bottom:10px">Weighted performance areas — score each 1 (poor) to 5 (excellent).</p>'+
   '<div class="stack" style="gap:10px">'+HEAD_AREAS.map(a=>'<div class="field" style="margin:0"><span class="lbl">'+a[1]+' <span class="opt">'+a[2]+'% weight</span></span><div class="rate" role="radiogroup" aria-label="'+esc(a[1])+' rating from 1 to 5">'+[1,2,3,4,5].map(n=>'<label class="chip"><input type="radio" name="area_'+a[0]+'" value="'+n+'"'+(hr&&hr.areas[a[0]]===n?' checked':'')+' required><span>'+n+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
   '<p class="muted" style="margin:16px 0 8px"><b>Weekly review of the Divisional Head</b></p><div class="stack" style="gap:8px">'+HEAD_REVIEW_Q.map(q=>'<div class="field" style="margin:0"><span class="lbl" style="font-size:14px">'+esc(q[1])+'</span><div class="chips">'+['Yes','Partly','No'].map(v=>'<label class="chip"><input type="radio" name="q_'+q[0]+'" value="'+v+'"'+((hr?hr.review[q[0]]:'')===v?' checked':'')+' required><span>'+v+'</span></label>').join('')+'</div></div>').join('')+'</div>'+
   area('Remarks','remarks',hr&&hr.remarks,{rows:3,req:false,max:500})+
-  '<p class="form-err" role="alert"></p><div class="actions"><button type="button" class="btn sec" data-act="close-modal">Cancel</button><button class="btn" type="submit">Save head review</button></div></form>';
+  '<p class="muted" style="margin:16px 0 4px"><b>Non-achievement &amp; problem analysis</b> <span class="opt">fill in the rows that apply — reason codes: E-Employee, M-Management, R-Resource, C-Coordination, EX-External, P-Planning, B-Beneficiary, F-Financial</span></p>'+
+  issues.map(issueRow).join('')+
+  '<p class="form-err" role="alert"></p><div class="actions">'+(embedded?'':'<button type="button" class="btn sec" data-act="close-modal">Cancel</button>')+'<button class="btn" type="submit">Save head review</button></div></form>';
 }
 
 VIEWS.admin=()=>{
@@ -1506,22 +1529,27 @@ const F={ /* form submit handlers (async allowed) */
     persist();closeModal();toast('Request sent to management','ok');draw(false);
   },
   report:f=>{
-    if(!ME||ME.role!=='head')return;
+    if(!needRole('admin'))return;
+    const unitId=f.dataset.unit;
+    if(!DB.units.find(u=>u.id===unitId&&u.active))return;
     const d=new FormData(f),wk=UI.week,get=k=>String(d.get(k)||'').trim();
-    const V=scoped(),m=computeMetrics(V,{type:'unit',id:ME.unitId},{weeks:[wk]});
+    const m=computeMetrics(DB,{type:'unit',id:unitId},{weeks:[wk]});
+    const headUser=DB.users.find(u=>u.active&&u.role==='head'&&u.unitId===unitId);
     const rec={
       achievements:get('achievements'),successes:get('successes'),positiveFeedback:get('positiveFeedback'),goodPractices:get('goodPractices'),
       missedTargets:get('missedTargets'),delays:get('delays'),qualityProblems:get('qualityProblems'),coordinationProblems:get('coordinationProblems'),resourceConstraints:get('resourceConstraints'),
       improvements:get('improvements'),nextWeek:get('nextWeek'),
-      rating:Number(d.get('rating')),avg:m.perf==null?0:m.perf,at:iso(new Date()),headId:ME.id};
+      rating:Number(d.get('rating')),avg:m.perf==null?0:m.perf,at:iso(new Date()),headId:headUser?headUser.id:'',by:ME.id};
     if(!rec.achievements&&!rec.successes&&!rec.missedTargets&&!rec.delays)return formErr(f,'Record at least what went well and what did not go well this week.');
-    const cur=DB.reports.find(r=>r.unitId===ME.unitId&&r.weekKey===wk);
-    if(cur)Object.assign(cur,rec);else DB.reports.push(Object.assign({id:uid('r'),unitId:ME.unitId,weekKey:wk},rec));
-    persist();toast('Report sent to management','ok');draw(false);
+    const cur=DB.reports.find(r=>r.unitId===unitId&&r.weekKey===wk);
+    if(cur)Object.assign(cur,rec);else DB.reports.push(Object.assign({id:uid('r'),unitId,weekKey:wk},rec));
+    persist();toast('Divisional report saved','ok');draw(false);
   },
   headreview:f=>{
-    if(!needRole('admin'))return;
+    if(!ME||(ME.role!=='admin'&&ME.role!=='head'))return;
     const d=new FormData(f),unitId=f.dataset.unit,headId=f.dataset.head,wk=UI.week;
+    if(ME.role==='head'&&(unitId!==ME.unitId||headId!==ME.id))return;
+    if(ME.role==='head'&&DB.locks&&DB.locks.entryOpen===false){toast('The executive team has paused data entry right now.','bad');return}
     if(!DB.units.find(u=>u.id===unitId&&u.active)||!DB.users.find(u=>u.id===headId&&u.active&&u.role==='head'))return;
     const areas={};let wsum=0,wtot=0;
     for(const ar of HEAD_AREAS){
@@ -1534,7 +1562,13 @@ const F={ /* form submit handlers (async allowed) */
       const v=d.get('q_'+q[0]);
       review[q[0]]=['Yes','Partly','No'].includes(v)?v:'No';
     }
-    const rec={unitId,headId,weekKey:wk,areas,weighted:wtot?Math.round(wsum/wtot*100):null,review,remarks:String(d.get('remarks')||'').trim(),at:iso(new Date()),by:ME.id};
+    const issues=[];
+    for(let i=0;i<5;i++){
+      const activity=String(d.get('iss_'+i+'_activity')||'').trim();
+      if(!activity)continue;
+      issues.push({activity,reason:String(d.get('iss_'+i+'_reason')||'').trim(),responsibility:String(d.get('iss_'+i+'_responsibility')||'').trim(),impact:String(d.get('iss_'+i+'_impact')||'').trim(),corrective:String(d.get('iss_'+i+'_corrective')||'').trim(),deadline:d.get('iss_'+i+'_deadline')||'',respPerson:String(d.get('iss_'+i+'_respPerson')||'').trim()});
+    }
+    const rec={unitId,headId,weekKey:wk,areas,weighted:wtot?Math.round(wsum/wtot*100):null,review,remarks:String(d.get('remarks')||'').trim(),issues,at:iso(new Date()),by:ME.id};
     DB.headReviews=DB.headReviews||[];
     const cur=DB.headReviews.find(x=>x.unitId===unitId&&x.headId===headId&&x.weekKey===wk);
     if(cur)Object.assign(cur,rec);else DB.headReviews.push(Object.assign({id:uid('hr')},rec));
@@ -1630,7 +1664,8 @@ const CHG={
     const loose=DB.users.find(u=>u.role==='staff'&&u.active&&u.name.toLowerCase()===val.toLowerCase());
     if(loose){UI.cmd[side].subj='p:'+loose.id;toast('Showing '+loose.name,'ok');draw(false);return}
     toast('No employee or unit matches that name. Pick from the list below it.','bad')},
-  'people-filter':el=>{UI[el.dataset.f]=el.value;draw(false)}
+  'people-filter':el=>{UI[el.dataset.f]=el.value;draw(false)},
+  'div-unit':el=>{if(!needRole('admin'))return;UI.divUnit=el.value;draw(false)}
 };
 
 document.addEventListener('click',e=>{
