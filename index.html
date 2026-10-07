@@ -340,7 +340,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px sol
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 /* ---------- overflow safety: long real-world text must never widen the page ---------- */
-html,body{max-width:100%;overflow-x:hidden}
+html,body{max-width:100%;overflow-x:clip}
 .stack{grid-template-columns:minmax(0,1fr)}
 .stack>*,.g2>*,.g3>*,.g4>*,.g5>*,.plans>*,.fgrid>*,.row2>*,.list>*,.card,.card>*,.tbl-wrap,.acc,.acc-body,.collapse,.collapse>.in,.empty,.note,.decision,.decision>*,.issue,.divrow,.row,.row>*,.plan,.who,.col,.main,.page-head>*,.card-h>*,.tools>*,.field,.facts>*{min-width:0}
 h1,h2,h3,h4,p,span,b,small,strong,label,li,dd,dt,td,th,a,.note,.muted,.who,.top2>*,.plan h3,.decision h3{overflow-wrap:anywhere;word-break:break-word}
@@ -805,7 +805,7 @@ const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){mem[k]=v}};
 const ssGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return mem['s'+k]||null}};
 const ssSet=(k,v)=>{try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){mem['s'+k]=v}};
 let DB=null,ME=null,CH={};
-const UI={route:'',week:null,reviewUser:null,cmd:null,tab:'units',q:'',roleF:'',unitF:''};
+const UI={route:'',week:null,reviewUser:null,cmd:null,tab:'units',clr:{who:'emp',person:'all',scope:'old'},q:'',roleF:'',unitF:''};
 
 /* =====================================================================
    Cloud sync (Firebase Firestore) — makes every device share one live copy
@@ -1449,13 +1449,53 @@ function headReviewForm(unitId,headId,embedded){
   '<p class="form-err" role="alert"></p><div class="actions">'+(embedded?'':'<button type="button" class="btn sec" data-act="close-modal">Cancel</button>')+'<button class="btn" type="submit">Save head review</button></div></form>';
 }
 
+/* ---------- Executive: clear old data of employees / team heads ---------- */
+function clrPlan(){
+  const c=UI.clr,wk=curWeek();
+  const role=c.who==='head'?'head':'staff';
+  let people=DB.users.filter(u=>u.role===role);
+  if(c.person!=='all'&&!people.some(u=>u.id===c.person))c.person='all';
+  if(c.person!=='all')people=people.filter(u=>u.id===c.person);
+  const ids=new Set(people.map(u=>u.id)),unitIds=new Set(people.map(u=>u.unitId));
+  const inScope=r=>c.scope==='all'||(r.weekKey&&r.weekKey<wk);
+  const lists=[];
+  if(role==='staff'){
+    lists.push(['plans','Weekly plan items',(DB.plans||[]).filter(r=>ids.has(r.userId)&&inScope(r))]);
+    lists.push(['assessments','Assessments by Team Head',(DB.assessments||[]).filter(r=>ids.has(r.userId)&&inScope(r))]);
+    lists.push(['behaviors','Behaviour ratings',(DB.behaviors||[]).filter(r=>ids.has(r.userId)&&inScope(r))]);
+  }else{
+    lists.push(['headReviews','Divisional Head reviews',(DB.headReviews||[]).filter(r=>ids.has(r.headId)&&inScope(r))]);
+    lists.push(['reports','Divisional reports',(DB.reports||[]).filter(r=>(r.headId?ids.has(r.headId):unitIds.has(r.unitId))&&inScope(r))]);
+    lists.push(['requests','Resource requests',(DB.requests||[]).filter(r=>ids.has(r.requestedBy)&&inScope(r))]);
+  }
+  return {people,lists,total:lists.reduce((n,l)=>n+l[2].length,0),role};
+}
+function adminClear(){
+  const c=UI.clr,P=clrPlan();
+  const role=c.who==='head'?'head':'staff';
+  const pool=DB.users.filter(u=>u.role===role).sort((a,b)=>a.name.localeCompare(b.name));
+  const opts=[['all',role==='head'?'All Team Heads':'All employees']].concat(pool.map(u=>[u.id,u.name+(u.unitId?' · '+unitName(u.unitId):'')]));
+  const who=P.role==='head'?'Team Head':'employee';
+  return '<section class="card"><h2 style="font-size:17px">Clear old data</h2>'+
+  '<p class="muted" style="margin:4px 0 14px">Choose whose data to remove. User accounts are never deleted &mdash; only their weekly records.</p>'+
+  '<div class="row2">'+
+    '<div class="field"><label for="clr-who">Clear data of</label><select id="clr-who" data-change="clr" data-field="who"><option value="emp"'+(c.who==='emp'?' selected':'')+'>Employees</option><option value="head"'+(c.who==='head'?' selected':'')+'>Team Heads</option></select></div>'+
+    '<div class="field"><label for="clr-person">Person</label><select id="clr-person" data-change="clr" data-field="person">'+opts.map(x=>'<option value="'+esc(x[0])+'"'+(String(x[0])===String(c.person)?' selected':'')+'>'+esc(x[1])+'</option>').join('')+'</select></div>'+
+  '</div>'+
+  '<div class="field" style="margin-top:14px"><label for="clr-scope">Which weeks</label><select id="clr-scope" data-change="clr" data-field="scope"><option value="old"'+(c.scope==='old'?' selected':'')+'>Old weeks only (before '+weekLabel(curWeek())+')</option><option value="all"'+(c.scope==='all'?' selected':'')+'>All weeks, including this week</option></select></div>'+
+  '<div class="note" style="margin:6px 0 14px"><b>This will remove</b>'+
+    '<div style="margin-top:8px;display:grid;gap:4px">'+P.lists.map(l=>'<div style="display:flex;justify-content:space-between;gap:12px"><span>'+l[1]+'</span><span style="font-weight:800">'+l[2].length+'</span></div>').join('')+'</div></div>'+
+  '<button class="btn danger" data-act="clr-go"'+(P.total?'':' disabled')+'>'+(P.total?'Clear '+P.total+' record'+(P.total===1?'':'s'):'Nothing to clear')+'</button>'+
+  '</section>';
+}
+
 VIEWS.admin=()=>{
-  const tabs='<div class="seg" role="tablist" style="margin-bottom:18px"><button class="'+(UI.tab==='units'?'on':'')+'" data-act="tab" data-t="units">Units</button><button class="'+(UI.tab==='people'?'on':'')+'" data-act="tab" data-t="people">People</button></div>';
+  const tabs='<div class="seg" role="tablist" style="margin-bottom:18px"><button class="'+(UI.tab==='units'?'on':'')+'" data-act="tab" data-t="units">Units</button><button class="'+(UI.tab==='people'?'on':'')+'" data-act="tab" data-t="people">People</button><button class="'+(UI.tab==='clear'?'on':'')+'" data-act="tab" data-t="clear">Clear data</button></div>';
   const open=!DB.locks||DB.locks.entryOpen!==false;
   const lockCard='<section class="card" style="margin-bottom:18px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">'+
     '<div><h2 style="font-size:17px">Team head &amp; employee data entry</h2><p class="muted" style="margin-top:4px">When turned off, team heads and employees can sign in and look around, but cannot add or change a weekly plan, assessment or behavioural rating.</p></div>'+
     '<button class="btn '+(open?'':'sec')+'" data-act="lock-toggle" aria-pressed="'+open+'"><span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:'+(open?'#3DDC84':'#9FB0CB')+'"></span>'+(open?'Data entry is ON':'Data entry is OFF')+'</button></section>';
-  return pageHead('Organisation','Add or remove units and employees to match the organisation chart.','<button class="btn sec" data-act="reset-demo">Reset demo data</button>')+lockCard+tabs+(UI.tab==='units'?adminUnits():adminPeople());
+  return pageHead('Organisation','Add or remove units and employees to match the organisation chart.','<button class="btn sec" data-act="reset-demo">Reset demo data</button>')+lockCard+tabs+(UI.tab==='units'?adminUnits():UI.tab==='clear'?adminClear():adminPeople());
 };
 function adminUnits(){
   const units=activeUnits();
@@ -1644,6 +1684,12 @@ const ACT={ /* click actions */
   'dec-del':el=>{if(!needRole('admin'))return;const d=DB.decisions.find(x=>x.id===el.dataset.id);if(!d)return;confirmBox('Delete this decision?','"'+d.title+'" will be removed from the log.','Delete',()=>{DB.decisions=DB.decisions.filter(x=>x.id!==d.id);persist();draw(false)})},
   'res-approve':el=>resolveReq(el.dataset.id,'Approved'),
   'res-decline':el=>resolveReq(el.dataset.id,'Declined'),
+  'clr-go':()=>{if(!needRole('admin'))return;const P=clrPlan();if(!P.total)return;
+    const c=UI.clr,whom=c.person==='all'?(P.role==='head'?'all Team Heads':'all employees'):P.people[0].name;
+    const lines=P.lists.filter(l=>l[2].length).map(l=>l[2].length+' '+l[1].toLowerCase()).join(', ');
+    confirmBox('Clear '+P.total+' record'+(P.total===1?'':'s')+'?','This permanently removes '+lines+' of '+whom+(c.scope==='old'?' from old weeks.':' from all weeks.')+' It cannot be undone.','Clear data',()=>{
+      const P2=clrPlan();P2.lists.forEach(l=>{const gone=new Set(l[2].map(r=>r.id));DB[l[0]]=(DB[l[0]]||[]).filter(r=>!gone.has(r.id))});
+      persist();toast(P2.total+' record'+(P2.total===1?'':'s')+' cleared','ok');draw(false)})},
   'req-del':el=>{if(!needRole('admin'))return;const q=DB.requests.find(x=>x.id===el.dataset.id);if(!q)return;confirmBox('Clear this request?','"'+q.item+'" will be removed from the list.','Clear',()=>{DB.requests=DB.requests.filter(x=>x.id!==q.id);persist();toast('Request cleared');draw(false)})},
   'rep-del':el=>{if(!needRole('admin'))return;const r=DB.reports.find(x=>x.id===el.dataset.id);if(!r)return;confirmBox('Clear this report?',unitName(r.unitId)+' · '+weekLabel(r.weekKey)+' will be removed.','Clear',()=>{DB.reports=DB.reports.filter(x=>x.id!==r.id);persist();toast('Report cleared');draw(false)})},
   tab:el=>{UI.tab=el.dataset.t;draw(false)},
@@ -1859,6 +1905,7 @@ const F={ /* form submit handlers (async allowed) */
   }
 };
 const CHG={
+  clr:el=>{if(!needRole('admin'))return;const c=UI.clr;c[el.dataset.field]=el.value;if(el.dataset.field==='who')c.person='all';draw(false)},
   'review-user':el=>{if(ME.role!=='head')return;UI.reviewUser=el.value;draw(false)},
   cmd:el=>{if(!needRole('admin'))return;UI.cmd[el.dataset.side][el.dataset.field]=el.value;draw(false)},
   'cmd-search':el=>{if(!needRole('admin'))return;const side=el.dataset.side,val=el.value.trim();if(!val)return;
