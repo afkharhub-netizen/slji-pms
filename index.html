@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="theme-color" content="#E8EFFC">
 <script>(function(){try{var t=localStorage.getItem("slji-theme");if(!t)t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;if(t==="dark")document.querySelector("meta[name=theme-color]").content="#0A1022"}catch(e){document.documentElement.dataset.theme="light"}})()</script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
 <title>SLJI Performance Monitoring System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -197,7 +197,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px sol
 .chip input:checked + span{background:var(--navy);border-color:var(--navy);color:#fff}
 .chip input:focus-visible + span{outline:3px solid var(--blue-2);outline-offset:2px}
 .rate{display:flex;gap:8px}
-.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 28px}
+.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px 28px}
 .dims .field{padding:10px 0;border-bottom:1px solid var(--line)}
 @media(max-width:420px){.rate{gap:6px}.rate .chip span{width:40px}}
 .rate .chip span{width:46px;justify-content:center;padding:0}
@@ -339,6 +339,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px sol
 @keyframes toastin{from{transform:translateY(18px)}to{transform:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
+/* ---------- overflow safety: long real-world text must never widen the page ---------- */
+html,body{max-width:100%;overflow-x:hidden}
+.stack{grid-template-columns:minmax(0,1fr)}
+.stack>*,.g2>*,.g3>*,.g4>*,.g5>*,.plans>*,.fgrid>*,.row2>*,.list>*,.card,.card>*,.tbl-wrap,.acc,.acc-body,.collapse,.collapse>.in,.empty,.note,.decision,.decision>*,.issue,.divrow,.row,.row>*,.plan,.who,.col,.main,.page-head>*,.card-h>*,.tools>*,.field,.facts>*{min-width:0}
+h1,h2,h3,h4,p,span,b,small,strong,label,li,dd,dt,td,th,a,.note,.muted,.who,.top2>*,.plan h3,.decision h3{overflow-wrap:anywhere;word-break:break-word}
+.pill{max-width:100%;white-space:normal;text-align:center}
+.tbl td,.tbl th{overflow-wrap:anywhere}
+.tbl th{white-space:normal}
+.menu{max-width:calc(100vw - 24px)}
+input,select,textarea{max-width:100%}
+.chart{max-width:100%;height:auto}
+img,svg{max-width:100%}
+.rate{flex-wrap:nowrap}.rate .chip{flex:1 1 0;min-width:0}.rate .chip span{width:100%;min-width:0;padding:0}
+
 /* =====================================================================
    GLASS THEME — translucent, blurred surfaces · light + dark
    ===================================================================== */
@@ -346,7 +360,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px sol
   color-scheme:light;
   --bg-base:#e9f0fc;
   --mesh:radial-gradient(900px 600px at 8% -5%,rgba(61,123,224,.38),transparent 60%),radial-gradient(800px 560px at 100% 8%,rgba(240,128,58,.26),transparent 60%),radial-gradient(900px 700px at 55% 108%,rgba(24,176,160,.26),transparent 60%);
-  --glass:rgba(255,255,255,.52); --glass-hi:rgba(255,255,255,.74); --glass-border:rgba(255,255,255,.75);
+  --glass:rgba(255,255,255,.52); --glass-hi:rgba(255,255,255,.74); --glass-solid:rgba(255,255,255,.9); --glass-border:rgba(255,255,255,.75);
   --surface:rgba(255,255,255,.55); --surface-solid:#fff; --field:rgba(255,255,255,.7);
   --shadow:0 8px 32px rgba(35,70,140,.14),inset 0 1px 0 rgba(255,255,255,.8);
   --track:rgba(20,40,90,.10); --grid:rgba(20,40,90,.13); --modal-bg:rgba(200,215,240,.55);
@@ -360,7 +374,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:3px sol
   color-scheme:dark;
   --bg-base:#0a1022;
   --mesh:radial-gradient(900px 600px at 5% -8%,rgba(53,104,230,.42),transparent 60%),radial-gradient(760px 520px at 100% 5%,rgba(240,128,58,.20),transparent 60%),radial-gradient(900px 700px at 60% 110%,rgba(20,184,166,.20),transparent 60%);
-  --glass:rgba(26,38,72,.50); --glass-hi:rgba(40,56,100,.62); --glass-border:rgba(255,255,255,.13);
+  --glass:rgba(26,38,72,.50); --glass-hi:rgba(40,56,100,.62); --glass-solid:rgba(22,32,62,.93); --glass-border:rgba(255,255,255,.13);
   --surface:rgba(255,255,255,.06); --surface-solid:#17213f; --field:rgba(255,255,255,.07);
   --shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
   --track:rgba(255,255,255,.13); --grid:rgba(255,255,255,.12); --modal-bg:rgba(5,9,22,.62);
@@ -402,7 +416,7 @@ body{background:var(--mesh),var(--bg-base);background-attachment:fixed;color:var
 .menu-item .ti{display:inline-grid}
 @media(max-width:900px){
   .top{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);color:var(--ink);border-bottom:1px solid var(--glass-border)}
-  .tabbar{background:var(--glass-hi);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);border-top:1px solid var(--glass-border);margin:0 10px calc(8px + env(safe-area-inset-bottom,0px));left:0;right:0;border-radius:22px;border:1px solid var(--glass-border);box-shadow:var(--shadow);padding-bottom:0;overflow:hidden}
+  .tabbar{background:var(--glass-solid);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);border-top:1px solid var(--glass-border);margin:0 10px calc(8px + env(safe-area-inset-bottom,0px));left:0;right:0;border-radius:22px;border:1px solid var(--glass-border);box-shadow:var(--shadow);padding-bottom:0;overflow:hidden}
   .tab{background:transparent;color:var(--ink-2);border-top-color:transparent}
   .tab.on{color:var(--blue);border-top-color:var(--blue-2);background:var(--sky)}
   .main{padding-bottom:120px}
